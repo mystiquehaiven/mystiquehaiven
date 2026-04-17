@@ -27,7 +27,12 @@ export default function SignInPage() {
         });
       }
 
-      router.push("/");
+      const tokenResult = await user.getIdTokenResult();
+        if (tokenResult.claims.admin) {
+          router.push("/admin");
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error(error);
     }
