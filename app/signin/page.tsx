@@ -22,7 +22,6 @@ export default function SignInPage() {
       if (!userSnap.exists()) {
         await setDoc(userRef, {
           email: user.email,
-          role: "free",
           subscriptionStatus: "inactive",
           createdAt: new Date(),
         });
