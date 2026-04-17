@@ -92,7 +92,6 @@ const PREDEFINED_TAGS = [
 ];
 
 export default function UploadForm() {
-  const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -106,8 +105,8 @@ export default function UploadForm() {
   };
 
   const handleUpload = async () => {
-    if (!file || !title.trim()) {
-      setErrorMsg("Title and file are required.");
+    if (!file) {
+      setErrorMsg("File is required.");
       return;
     }
 
@@ -123,7 +122,6 @@ export default function UploadForm() {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", title.trim());
       formData.append("tags", JSON.stringify(selectedTags));
 
       const res = await fetch("/api/upload", {
@@ -138,7 +136,6 @@ export default function UploadForm() {
       }
 
       setStatus("success");
-      setTitle("");
       setSelectedTags([]);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -152,16 +149,7 @@ export default function UploadForm() {
     <div className="upload-form">
       <h2 className="form-heading">Upload Video</h2>
 
-      <div className="field">
-        <label className="label">Title</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter video title"
-          className="input"
-        />
-      </div>
+
 
       <div className="field">
         <label className="label">Tags</label>
