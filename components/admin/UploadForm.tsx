@@ -5,12 +5,15 @@ import { auth } from "@/lib/firebase";
 
 // Replace with your real tags when ready
 const PREDEFINED_TAGS = [
-  "Tag One",
-  "Tag Two",
-  "Tag Three",
-  "Tag Four",
-  "Tag Five",
-  "Tag Six",
+  "Blonde",
+  "Brunette",
+  "Redhead",
+  "Strip",
+  "Nude",
+  "Hardcore",
+  "Realistic",
+  "Anime",
+  "Fantasy",
 ];
 
 export default function UploadForm() {
