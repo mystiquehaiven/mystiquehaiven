@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
   // 3. Parse multipart form data
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
-  const title = formData.get("title") as string | null;
+  const title = `video_${Date.now()}`;
   const tagsRaw = formData.get("tags") as string | null;
 
-  if (!file || !title) {
+  if (!file) {
     return NextResponse.json({ error: "Missing file or title" }, { status: 400 });
   }
 

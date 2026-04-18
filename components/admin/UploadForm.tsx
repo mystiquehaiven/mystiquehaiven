@@ -5,16 +5,90 @@ import { auth } from "@/lib/firebase";
 
 // Replace with your real tags when ready
 const PREDEFINED_TAGS = [
-  "Tag One",
-  "Tag Two",
-  "Tag Three",
-  "Tag Four",
-  "Tag Five",
-  "Tag Six",
+  "Blonde",
+  "Brunette",
+  "Redhead",
+  "Black Hair",
+  "Colored Hair",
+  "Big Boobs",
+  "Anime",
+  "Realistic",
+  "Sex",
+  "Blowjob",
+  "Deepthroat",
+  "Missionary",
+  "Doggy",
+  "Cowgirl",
+  "Reverse Cowgirl",
+  "Prone",
+  "Nude",
+  "Topless",
+  "Bottomless",
+  "Stripping",
+  "Public",
+  "Forest",
+  "Grocery Store",
+  "Bar",
+  "Dancing",
+  "Alien",
+  "Sci-Fi",
+  "Fantasy",
+  "Medievel",
+  "Bikini",
+  "Beach",
+  "Lingerie",
+  "Shower",
+  "Gym",
+  "Sundress",
+  "Panties",
+  "Tail",
+  "Cat-Girl",
+  "Skirt",
+  "Lesbian",
+  "Clones",
+  "Submissive",
+  "Handjob",
+  "Titfuck",
+  "Magic",
+  "Thong",
+  "Bunny-Girl",
+  "Leather",
+  "Pool",
+  "Festival",
+  "Cumshot",
+  "Cum",
+  "Masturbating",
+  "Fingering",
+  "Strap-On",
+  "Dildo",
+  "Demon",
+  "Angel",
+  "Threesome",
+  "Cyberpunk",
+  "Elf",
+  "Fairy",
+  "Black and White",
+  "With Sound",
+  "Softcore",
+  "Hardcore",
+  "Park",
+  "Ass",
+  "Pussy",
+  "Socks",
+  "Leggings",
+  "Corset",
+  "Goddess",
+  "Tattoos",
+  "Nipples Pierced",
+  "Wings",
+  "Booty Shorts",
+  "Emo",
+  "Goth",
+
+
 ];
 
 export default function UploadForm() {
-  const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -28,7 +102,7 @@ export default function UploadForm() {
   };
 
   const handleUpload = async () => {
-    if (!file || !title.trim()) {
+    if (!file) {
       setErrorMsg("Title and file are required.");
       return;
     }
@@ -45,7 +119,6 @@ export default function UploadForm() {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", title.trim());
       formData.append("tags", JSON.stringify(selectedTags));
 
       const res = await fetch("/api/upload", {
@@ -60,7 +133,6 @@ export default function UploadForm() {
       }
 
       setStatus("success");
-      setTitle("");
       setSelectedTags([]);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -74,16 +146,6 @@ export default function UploadForm() {
     <div className="upload-form">
       <h2 className="form-heading">Upload Video</h2>
 
-      <div className="field">
-        <label className="label">Title</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter video title"
-          className="input"
-        />
-      </div>
 
       <div className="field">
         <label className="label">Tags</label>
