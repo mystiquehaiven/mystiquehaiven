@@ -84,6 +84,8 @@ const PREDEFINED_TAGS = [
   "Booty Shorts",
   "Emo",
   "Goth",
+  "Hentai",
+  "Yuri",
 
 
 ].sort();
