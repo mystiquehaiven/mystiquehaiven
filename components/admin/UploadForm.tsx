@@ -86,7 +86,7 @@ const PREDEFINED_TAGS = [
   "Goth",
 
 
-];
+].sort();
 
 export default function UploadForm() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
