@@ -8,7 +8,7 @@ export default function Home() {
     MYSTIQUE hAIven
   </h2>
   <h3>
-    "LOREM IPSUM"
+    THE BEST NSFW AI GALLERY ON THE NET
   </h3>
 </div>
   );
