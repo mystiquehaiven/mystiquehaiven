@@ -1,3 +1,6 @@
+import WaitlistForm from "@/components/WaitlistForm";
+
+
 export default function Home() {
   return (
 <div className="flex flex-col items-center justify-center min-h-screen bg-black gap-4">
@@ -10,6 +13,7 @@ export default function Home() {
   <h3>
     THE BEST NSFW AI GALLERY ON THE NET
   </h3>
+  <WaitlistForm />
 </div>
   );
 }
