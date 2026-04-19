@@ -32,6 +32,7 @@ const PREDEFINED_TAGS = [
   "Dancing",
   "Alien",
   "Sci-Fi",
+  "Vampire",
   "Fantasy",
   "Medieval",
   "Fire",
