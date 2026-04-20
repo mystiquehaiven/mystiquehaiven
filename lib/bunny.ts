@@ -25,12 +25,9 @@ export async function createBunnyVideo(title: string): Promise<{ videoId: string
 
 export async function uploadToBunny(
   videoId: string,
-  stream: ReadableStream<Uint8Array>,
+  data: ArrayBuffer,
   contentType: string
 ): Promise<void> {
-  console.log("Starting upload to Bunny for videoId:", videoId);
-  console.log("Stream type:", stream.constructor.name);
-  
   const res = await fetch(
     `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${videoId}`,
     {
@@ -39,11 +36,10 @@ export async function uploadToBunny(
         AccessKey: BUNNY_API_KEY,
         "Content-Type": contentType,
       },
-      body: stream as any,
+      body: new Uint8Array(data),
     }
   );
 
-  console.log("Bunny response status:", res.status);
   if (!res.ok) {
     throw new Error(`Failed to upload to Bunny: ${res.statusText}`);
   }
