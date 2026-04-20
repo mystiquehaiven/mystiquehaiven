@@ -33,6 +33,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing file or title" }, { status: 400 });
   }
 
+  if (file.size > 4 * 1024 * 1024) {
+  return NextResponse.json(
+    { error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Max 4MB.` },
+    { status: 413 }
+  );
+}
+
   const tags: string[] = tagsRaw ? JSON.parse(tagsRaw) : [];
 
   try {
