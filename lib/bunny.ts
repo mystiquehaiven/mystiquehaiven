@@ -23,7 +23,11 @@ export async function createBunnyVideo(title: string): Promise<{ videoId: string
   return { videoId: data.guid };
 }
 
-export async function uploadToBunny(videoId: string, file: ArrayBuffer, contentType: string): Promise<void> {
+export async function uploadToBunny(
+  videoId: string,
+  stream: ReadableStream<Uint8Array>,
+  contentType: string
+): Promise<void> {
   const res = await fetch(
     `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${videoId}`,
     {
@@ -32,7 +36,7 @@ export async function uploadToBunny(videoId: string, file: ArrayBuffer, contentT
         AccessKey: BUNNY_API_KEY,
         "Content-Type": contentType,
       },
-      body: file,
+      body: stream as any, // fetch accepts ReadableStream
     }
   );
 
