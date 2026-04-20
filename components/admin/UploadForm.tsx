@@ -98,6 +98,7 @@ const PREDEFINED_TAGS = [
   "Nature",
   "Dress",
   "Robe",
+  "Heels",
 
 
 ].sort();
