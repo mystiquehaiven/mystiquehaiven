@@ -92,7 +92,7 @@ const PREDEFINED_TAGS = [
   "Hentai",
   "Yuri",
   "Tank Top",
-  "Armour",
+  "Armor",
   "Anal",
 
 
