@@ -29,6 +29,7 @@ const PREDEFINED_TAGS = [
   "Forest",
   "Grocery Store",
   "Club",
+  "Body Suit",
   "Dancing",
   "Alien",
   "Sci-Fi",
