@@ -95,6 +95,7 @@ const PREDEFINED_TAGS = [
   "Armor",
   "Anal",
   "Mask",
+  "Nature",
 
 
 ].sort();
