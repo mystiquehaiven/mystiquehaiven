@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
     // 4. Create video record in Bunny
     const { videoId } = await createBunnyVideo(title);
 
-    // 5. Upload file stream to Bunny (no buffering)
-    await uploadToBunny(videoId, file.stream(), file.type);
+    const arrayBuffer = await file.arrayBuffer();
+    await uploadToBunny(videoId, arrayBuffer, file.type);
 
     // 6. Save metadata to Firestore
     await adminDb.collection("videos").doc(videoId).set({
