@@ -18,43 +18,36 @@ export default function AdminPage() {
 
   
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        router.replace("/signin");
-        return;
-      }
-      const tokenResult = await u.getIdTokenResult();
-      if (!tokenResult.claims.admin) {
-        router.replace("/");
-        return;
-      }
-      // Add fetch inside the onAuthStateChanged callback, after confirming admin:
-      const token = await u.getIdToken();
-      const res = await fetch("/api/admin/tag-counts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTagCounts(data.counts);
-}
-      setUser(u);
-      setIsAdmin(true);
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    if (!u) {
+      router.replace("/signin");
+      return;
+    }
+    const tokenResult = await u.getIdTokenResult();
+    if (!tokenResult.claims.admin) {
+      router.replace("/");
+      return;
+    }
 
-      const TagCountsToken = await u.getIdToken();
-      const TagRes = await fetch("/api/admin/tag-counts", {
-        headers: { Authorization: `Bearer ${TagCountsToken}` },
-      });
-      if (TagRes.ok) {
-        const data = await res.json();
-      setTagCounts(data.counts);
-}
-
-      setLoading(false);
+    const token = await u.getIdToken();
+    const res = await fetch("/api/admin/tag-counts", {
+      headers: { Authorization: `Bearer ${token}` },
     });
+    if (res.ok) {
+      const data = await res.json();
+      setTagCounts(data.counts);
+    }
 
-    return () => unsubscribe();
-  }, [router]);
+    setUser(u);
+    setIsAdmin(true);
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, [router]);
+
+
 
   if (loading) {
     return (
