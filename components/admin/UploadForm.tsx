@@ -3,8 +3,13 @@
 import { useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
 
+interface UploadFormProps {
+  tagCounts?: Record<string, number>;
+}
+
+
 // Replace with your real tags when ready
-const PREDEFINED_TAGS = [
+export const PREDEFINED_TAGS = [
   "Blonde",
   "Brunette",
   "Redhead",
@@ -105,12 +110,13 @@ const PREDEFINED_TAGS = [
 
 ].sort();
 
-export default function UploadForm() {
+export default function UploadForm({ tagCounts = {} }: UploadFormProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -169,13 +175,14 @@ export default function UploadForm() {
         <div className="tag-grid">
           {PREDEFINED_TAGS.map((tag) => (
             <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`tag-btn ${selectedTags.includes(tag) ? "tag-btn--active" : ""}`}
-            >
-              {tag}
+            key={tag}
+            onClick={() => toggleTag(tag)}
+            className={`tag-btn ${selectedTags.includes(tag) ? "tag-btn--active" : ""}`}
+  >
+            {tag}
+              <span className="tag-count">{tagCounts[tag] ?? 0}</span>
             </button>
-          ))}
+        ))}
         </div>
       </div>
 
@@ -315,6 +322,11 @@ export default function UploadForm() {
           background: #333;
           color: #666;
           cursor: not-allowed;
+        }
+        .tag-count {
+          margin-left: 6px;
+          font-size: 0.7rem;
+          color: #444;
         }
       `}</style>
     </div>

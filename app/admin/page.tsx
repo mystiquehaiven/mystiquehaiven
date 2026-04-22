@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import UploadForm from "@/components/admin/UploadForm";
+import UploadForm, { PREDEFINED_TAGS } from "@/components/admin/UploadForm";
 import Link from "next/link";
+
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
+
+
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -24,6 +29,15 @@ export default function AdminPage() {
         router.replace("/");
         return;
       }
+      // Add fetch inside the onAuthStateChanged callback, after confirming admin:
+      const token = await u.getIdToken();
+      const res = await fetch("/api/admin/tag-counts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTagCounts(data.counts);
+}
       setUser(u);
       setIsAdmin(true);
       setLoading(false);
@@ -60,8 +74,10 @@ export default function AdminPage() {
             <span className="admin-badge">Admin</span>
           </div>
         </div>
+          
 
-        <UploadForm />
+
+        <UploadForm tagCounts={tagCounts} />
       </main>
 
       <style jsx>{`
@@ -146,6 +162,7 @@ export default function AdminPage() {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 1; }
         }
+
       `}</style>
     </div>
   );
