@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import UploadForm, { PREDEFINED_TAGS } from "@/components/admin/UploadForm";
+import UploadForm from "@/components/admin/UploadForm";
 import Link from "next/link";
 
 
@@ -40,6 +40,16 @@ export default function AdminPage() {
 }
       setUser(u);
       setIsAdmin(true);
+
+      const TagCountsToken = await u.getIdToken();
+      const TagRes = await fetch("/api/admin/tag-counts", {
+        headers: { Authorization: `Bearer ${TagCountsToken}` },
+      });
+      if (TagRes.ok) {
+        const data = await res.json();
+      setTagCounts(data.counts);
+}
+
       setLoading(false);
     });
 
