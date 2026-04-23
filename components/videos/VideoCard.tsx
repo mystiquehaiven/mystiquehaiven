@@ -44,12 +44,13 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        manifestReadyRef.current = true;
-        video.muted = isMutedRef.current;
-        if (isActiveRef.current) {
-          video.play().catch((err) => console.error("play failed:", err));
-        }
-      });
+  console.log("manifest parsed, isActive:", isActiveRef.current);
+  manifestReadyRef.current = true;
+  video.muted = isMutedRef.current;
+  if (isActiveRef.current) {
+    video.play().catch((err) => console.error("play failed:", err));
+  }
+});
 
       return () => {
         hls.destroy();
