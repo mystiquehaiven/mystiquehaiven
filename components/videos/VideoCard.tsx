@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Hls from "hls.js";
 
 interface VideoCardProps {
   bunnyVideoId: string;
@@ -20,21 +21,22 @@ export default function VideoCard({
   isMuted,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  
 
 useEffect(() => {
   const video = videoRef.current;
-  console.log("VideoCard effect — isActive:", isActive, "video:", video);
   if (!video) return;
 
-  video.muted = isMuted;
-
-  if (isActive) {
-    video.play().catch((err) => console.error("play failed:", err));
-  } else {
-    video.pause();
-    video.currentTime = 0;
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(playbackUrl);
+    hls.attachMedia(video);
+    return () => hls.destroy();
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    // Safari — native HLS
+    video.src = playbackUrl;
   }
-}, [isActive, isMuted]);
+}, [playbackUrl]);
 
   // Sync mute state independently of play state
   useEffect(() => {

@@ -46,7 +46,7 @@ export async function uploadToBunny(
 }
 
 export function getBunnyPlaybackUrl(videoId: string): string {
-  return `https://${BUNNY_CDN_HOSTNAME}/${videoId}/play`;
+  return `https://${BUNNY_CDN_HOSTNAME}/${videoId}/playlist.m3u8`;
 }
 
 export function getBunnyThumbnailUrl(videoId: string): string {
