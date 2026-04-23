@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
+
 export default function SignInPage() {
   const router = useRouter();
 
