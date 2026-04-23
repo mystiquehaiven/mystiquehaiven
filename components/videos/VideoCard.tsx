@@ -4,90 +4,74 @@ import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
-  bunnyVideoId: string;
   playbackUrl: string;
   thumbnailUrl: string;
-  tags: string[];
   isActive: boolean;
+  isNear: boolean; // within 1 slot of active — preload but don't play
   isMuted: boolean;
 }
 
 export default function VideoCard({
-  bunnyVideoId,
   playbackUrl,
   thumbnailUrl,
-  tags,
   isActive,
+  isNear,
   isMuted,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const isActiveRef = useRef(isActive);
-  const isMutedRef = useRef(isMuted);
-  const manifestReadyRef = useRef(false);
-  const isMountedPlayRef = useRef(true); // true on first render, prevents effect from playing before manifest
 
-  // Keep refs in sync
-  useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
-  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-
-  // HLS setup
+  // Only initialize HLS when near or active, destroy when far away
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    manifestReadyRef.current = false;
-    isMountedPlayRef.current = true;
+    if (!isNear && !isActive) {
+      // Tear down if exists
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+        video.removeAttribute("src");
+        video.load();
+      }
+      return;
+    }
+
+    // Already loaded
+    if (hlsRef.current) return;
 
     if (Hls.isSupported()) {
       const hls = new Hls();
       hlsRef.current = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        manifestReadyRef.current = true;
-        isMountedPlayRef.current = false;
-        video.muted = isMutedRef.current;
-        if (isActiveRef.current) {
-          video.play().catch((err) => console.error("play failed:", err));
-        }
-      });
-
-      return () => {
-        hls.destroy();
-        hlsRef.current = null;
-        manifestReadyRef.current = false;
-      };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
-      video.addEventListener("canplay", () => {
-        manifestReadyRef.current = true;
-        isMountedPlayRef.current = false;
-        video.muted = isMutedRef.current;
-        if (isActiveRef.current) {
-          video.play().catch((err) => console.error("play failed:", err));
-        }
-      }, { once: true });
     }
-  }, [playbackUrl]);
+  }, [isActive, isNear, playbackUrl]);
 
-  // Handle active/mute changes after initial mount play is handled
+  // Play/pause
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     video.muted = isMuted;
 
-    // Skip on initial mount — MANIFEST_PARSED handles first play
-    if (isMountedPlayRef.current) return;
-    if (!manifestReadyRef.current) return;
-
     if (isActive) {
-      video.play().catch((err) => console.error("play failed:", err));
-    } else if (!video.paused) {
-      video.pause();
-      video.currentTime = 0;
+      // Small delay to ensure HLS has attached
+      const timer = setTimeout(() => {
+        video.play().catch(() => {
+          // Retry once muted if blocked
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      if (!video.paused) {
+        video.pause();
+        video.currentTime = 0;
+      }
     }
   }, [isActive, isMuted]);
 

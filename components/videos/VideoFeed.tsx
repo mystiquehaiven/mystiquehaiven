@@ -41,14 +41,7 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const filteredVideos = rankVideos(videos, selectedTags);
   const displayVideos = filteredVideos.length > 0 ? filteredVideos : videos;
 
-  // Set activeIndex to 0 as soon as videos are available
-  useEffect(() => {
-    if (displayVideos.length > 0) {
-      setActiveIndex(0);
-    }
-  }, [displayVideos.length]);
-
-  // Intersection observer — track which card is most visible
+  // Intersection observer
   useEffect(() => {
     const cards = cardRefs.current.filter(Boolean);
     if (cards.length === 0) return;
@@ -64,7 +57,7 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
           }
         },
         {
-          root: feedListRef.current, // observe within the scroll container
+          root: feedListRef.current,
           threshold: 0.5,
         }
       );
@@ -75,7 +68,7 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
     return () => observers.forEach((obs) => obs.disconnect());
   }, [displayVideos.length]);
 
-  // Keyboard navigation for desktop
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
@@ -96,7 +89,6 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const handleApplyTags = useCallback((tags: string[]) => {
     setSelectedTags(tags);
     setActiveIndex(0);
-    // Scroll the feed list container, not the window
     if (feedListRef.current) {
       feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -141,11 +133,10 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
             className="feed-item"
           >
             <VideoCard
-              bunnyVideoId={video.bunnyVideoId}
               playbackUrl={video.playbackUrl}
               thumbnailUrl={video.thumbnailUrl}
-              tags={video.tags}
               isActive={i === activeIndex}
+              isNear={Math.abs(i - activeIndex) <= 1}
               isMuted={isMuted}
             />
           </div>
