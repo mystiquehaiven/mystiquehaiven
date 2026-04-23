@@ -107,6 +107,9 @@ export const PREDEFINED_TAGS = [
   "Heels",
   "Boots",
   "Hairy",
+  "Rain",
+  "Princess",
+  "Group",
 
 
 ].sort();
