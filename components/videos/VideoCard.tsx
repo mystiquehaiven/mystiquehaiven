@@ -21,28 +21,31 @@ export default function VideoCard({
   isMuted,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
-  // HLS setup
+  // HLS setup — only re-runs when playbackUrl changes
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (Hls.isSupported()) {
       const hls = new Hls();
+      hlsRef.current = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
-      return () => hls.destroy();
+      return () => {
+        hls.destroy();
+        hlsRef.current = null;
+      };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
     }
   }, [playbackUrl]);
 
-  // Play/pause based on active state
+  // Play/pause — re-runs when active state changes
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
-    video.muted = isMuted;
 
     if (isActive) {
       video.play().catch((err) => console.error("play failed:", err));
@@ -50,7 +53,13 @@ export default function VideoCard({
       video.pause();
       video.currentTime = 0;
     }
-  }, [isActive, isMuted]);
+  }, [isActive]);
+
+  // Mute sync — re-runs when mute state changes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.muted = isMuted;
+  }, [isMuted]);
 
   return (
     <div
