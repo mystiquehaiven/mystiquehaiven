@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import VideoFeed from "@/components/videos/VideoFeed";
+import "@/styles/videos.css"
 
 interface Video {
   id: string;
