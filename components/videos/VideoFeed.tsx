@@ -66,7 +66,7 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
     });
 
     return () => observers.forEach((obs) => obs.disconnect());
-  }, [displayVideos.length]);
+  }, [displayVideos.map(v => v.id).join(",")]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -125,7 +125,9 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
       />
 
       {/* Feed */}
-      <div className="feed-list" ref={feedListRef}>
+      <div className="feed-list" 
+           ref={feedListRef}
+           key={selectedTags.join(",")}>
         {displayVideos.map((video, i) => (
           <div
             key={video.id}

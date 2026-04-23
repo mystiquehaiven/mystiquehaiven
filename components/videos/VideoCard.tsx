@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
@@ -20,12 +20,22 @@ export default function VideoCard({
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const readyRef = useRef(false);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
-  const readyRef = useRef(false); // true only after MANIFEST_PARSED
 
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+  const syncPlayback = useCallback((video: HTMLVideoElement) => {
+    video.muted = isMutedRef.current;
+    if (isActiveRef.current) {
+      video.play().catch((err) => console.error("play failed:", err));
+    } else if (!video.paused) {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, []);
 
   // HLS init
   useEffect(() => {
@@ -47,10 +57,7 @@ export default function VideoCard({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         readyRef.current = true;
-        video.muted = isMutedRef.current;
-        if (isActiveRef.current) {
-          video.play().catch((err) => console.error("play failed:", err));
-        }
+        syncPlayback(video);
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -61,10 +68,7 @@ export default function VideoCard({
       video.src = playbackUrl;
       video.addEventListener("canplay", () => {
         readyRef.current = true;
-        video.muted = isMutedRef.current;
-        if (isActiveRef.current) {
-          video.play().catch((err) => console.error("play failed:", err));
-        }
+        syncPlayback(video);
       }, { once: true });
     }
 
@@ -75,28 +79,17 @@ export default function VideoCard({
         hlsRef.current = null;
       }
     };
-  }, [playbackUrl]);
+  }, [playbackUrl, syncPlayback]);
 
-  // Play/pause for active state changes — skips until MANIFEST_PARSED has fired
+  // Play/pause on active/mute changes — only after manifest is ready
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !readyRef.current) return;
-
-    video.muted = isMuted;
-
-    if (isActive) {
-      video.play().catch((err) => console.error("play failed:", err));
-    } else if (!video.paused) {
-      video.pause();
-      video.currentTime = 0;
-    }
-  }, [isActive, isMuted]);
+    syncPlayback(video);
+  }, [isActive, isMuted, syncPlayback]);
 
   return (
-    <div
-      className="video-card"
-      onContextMenu={(e) => e.preventDefault()}
-    >
+    <div className="video-card" onContextMenu={(e) => e.preventDefault()}>
       <video
         ref={videoRef}
         poster={thumbnailUrl}

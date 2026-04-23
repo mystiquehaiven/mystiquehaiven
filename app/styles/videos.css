@@ -8,16 +8,13 @@
 }
 
 .feed-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
 }
 
 .feed-item {
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
+  scroll-snap-align: start;
+  height: 100dvh; /* or whatever your card height is */
 }
 
 /* ─── Video Card ──────────────────────────────────────────────── */
