@@ -36,39 +36,63 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const feedListRef = useRef<HTMLDivElement>(null);
 
   const filteredVideos = rankVideos(videos, selectedTags);
   const displayVideos = filteredVideos.length > 0 ? filteredVideos : videos;
 
-useEffect(() => {
-  const cards = cardRefs.current.filter(Boolean);
-  if (cards.length === 0) return; // bail if DOM isn't ready
+  // Intersection observer — track which card is most visible
+  useEffect(() => {
+    const cards = cardRefs.current.filter(Boolean);
+    if (cards.length === 0) return;
 
-  const observers: IntersectionObserver[] = [];
+    const observers: IntersectionObserver[] = [];
 
-  cards.forEach((el, i) => {
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.intersectionRatio >= 0.5) {
-          console.log("active index:", i);
-          setActiveIndex(i);
+    cards.forEach((el, i) => {
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.intersectionRatio >= 0.5) {
+            setActiveIndex(i);
+          }
+        },
+        {
+          root: feedListRef.current, // observe within the scroll container
+          threshold: 0.5,
         }
-      },
-      { threshold: 0.5 }
-    );
-    obs.observe(el);
-    observers.push(obs);
-  });
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
 
-  return () => observers.forEach((obs) => obs.disconnect());
-}, [displayVideos.length]); // depend on length, not the array reference
+    return () => observers.forEach((obs) => obs.disconnect());
+  }, [displayVideos.length]);
+
+  // Keyboard navigation for desktop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = Math.min(activeIndex + 1, displayVideos.length - 1);
+        cardRefs.current[next]?.scrollIntoView({ behavior: "smooth" });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = Math.max(activeIndex - 1, 0);
+        cardRefs.current[prev]?.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeIndex, displayVideos.length]);
 
   const handleApplyTags = useCallback((tags: string[]) => {
     setSelectedTags(tags);
     setActiveIndex(0);
-    // Scroll back to top when filter changes
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Scroll the feed list container, not the window
+    if (feedListRef.current) {
+      feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, []);
 
   return (
@@ -102,7 +126,7 @@ useEffect(() => {
       />
 
       {/* Feed */}
-      <div className="feed-list">
+      <div className="feed-list" ref={feedListRef}>
         {displayVideos.map((video, i) => (
           <div
             key={video.id}

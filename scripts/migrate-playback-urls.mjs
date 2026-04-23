@@ -7,7 +7,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const serviceAccount = require("../service-account.json");
 
-const BUNNY_CDN_HOSTNAME = process.env.BUNNY_CDN_HOSTNAME;
+const BUNNY_CDN_HOSTNAME = "vz-53bf2ade-7e4.b-cdn.net";
 
 if (!BUNNY_CDN_HOSTNAME) {
   console.error("Error: BUNNY_CDN_HOSTNAME env var is not set.");
@@ -38,10 +38,10 @@ async function migrate() {
       const data = doc.data();
       const current = data.playbackUrl ?? "";
 
-      if (current.endsWith("/playlist.m3u8")) {
-        skipped++;
-        continue;
-      }
+     // if (current.includes(BUNNY_CDN_HOSTNAME) && current.endsWith("/playlist.m3u8")) {
+      //  skipped++;
+      //  continue;
+     // }
 
       const videoId = data.bunnyVideoId ?? doc.id;
       const newUrl = `https://${BUNNY_CDN_HOSTNAME}/${videoId}/playlist.m3u8`;
