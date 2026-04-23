@@ -40,26 +40,29 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const filteredVideos = rankVideos(videos, selectedTags);
   const displayVideos = filteredVideos.length > 0 ? filteredVideos : videos;
 
-  // Intersection observer — track which card is most visible
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
+useEffect(() => {
+  const cards = cardRefs.current.filter(Boolean);
+  if (cards.length === 0) return; // bail if DOM isn't ready
 
-    cardRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.intersectionRatio >= 0.5) {
-            setActiveIndex(i);
-          }
-        },
-        { threshold: 0.5 }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
+  const observers: IntersectionObserver[] = [];
 
-    return () => observers.forEach((obs) => obs.disconnect());
-  }, [displayVideos]);
+  cards.forEach((el, i) => {
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.intersectionRatio >= 0.5) {
+          console.log("active index:", i);
+          setActiveIndex(i);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    obs.observe(el);
+    observers.push(obs);
+  });
+
+  return () => observers.forEach((obs) => obs.disconnect());
+}, [displayVideos.length]); // depend on length, not the array reference
 
   const handleApplyTags = useCallback((tags: string[]) => {
     setSelectedTags(tags);
