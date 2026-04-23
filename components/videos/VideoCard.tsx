@@ -22,28 +22,23 @@ export default function VideoCard({
   const hlsRef = useRef<Hls | null>(null);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
+  const isNearRef = useRef(isNear);
 
+  // Keep refs in sync — never trigger HLS re-init
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => { isNearRef.current = isNear; }, [isNear]);
 
-  // Initialize or destroy HLS based on proximity
+  // HLS init — only runs when playbackUrl changes, never on isActive/isNear changes
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const shouldLoad = isActive || isNear;
-
-    if (!shouldLoad) {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-        video.removeAttribute("src");
-        video.load();
-      }
-      return;
+    // Destroy any existing instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
     }
-
-    if (hlsRef.current) return; // already loaded
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -59,7 +54,7 @@ export default function VideoCard({
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) console.error("HLS fatal error:", data);
+        if (data.fatal) console.error("HLS fatal error:", data.type, data.details);
       });
 
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -78,9 +73,9 @@ export default function VideoCard({
         hlsRef.current = null;
       }
     };
-  }, [isActive, isNear, playbackUrl]);
+  }, [playbackUrl]); // only playbackUrl — never isActive or isNear
 
-  // Handle transitions between videos after HLS is already loaded
+  // Play/pause when active state changes — only if HLS already ready
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !hlsRef.current) return;
