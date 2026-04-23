@@ -41,6 +41,13 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const filteredVideos = rankVideos(videos, selectedTags);
   const displayVideos = filteredVideos.length > 0 ? filteredVideos : videos;
 
+  // Set activeIndex to 0 as soon as videos are available
+  useEffect(() => {
+    if (displayVideos.length > 0) {
+      setActiveIndex(0);
+    }
+  }, [displayVideos.length]);
+
   // Intersection observer — track which card is most visible
   useEffect(() => {
     const cards = cardRefs.current.filter(Boolean);

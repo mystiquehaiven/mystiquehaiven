@@ -44,13 +44,12 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-  console.log("manifest parsed, isActive:", isActiveRef.current);
-  manifestReadyRef.current = true;
-  video.muted = isMutedRef.current;
-  if (isActiveRef.current) {
-    video.play().catch((err) => console.error("play failed:", err));
-  }
-});
+        manifestReadyRef.current = true;
+        video.muted = isMutedRef.current;
+        if (isActiveRef.current) {
+          video.play().catch((err) => console.error("play failed:", err));
+        }
+      });
 
       return () => {
         hls.destroy();
@@ -69,12 +68,14 @@ export default function VideoCard({
     }
   }, [playbackUrl]);
 
-  // Handle active state changes ONLY after manifest is ready
+  // Handle active/mute changes — also triggers play if manifest already ready
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !manifestReadyRef.current) return;
+    if (!video) return;
 
     video.muted = isMuted;
+
+    if (!manifestReadyRef.current) return;
 
     if (isActive) {
       video.play().catch((err) => console.error("play failed:", err));
