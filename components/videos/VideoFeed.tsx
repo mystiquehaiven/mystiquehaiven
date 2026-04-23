@@ -41,32 +41,26 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
   const filteredVideos = rankVideos(videos, selectedTags);
   const displayVideos = filteredVideos.length > 0 ? filteredVideos : videos;
 
-  // Intersection observer
-  useEffect(() => {
-    const cards = cardRefs.current.filter(Boolean);
-    if (cards.length === 0) return;
-
-    const observers: IntersectionObserver[] = [];
-
-    cards.forEach((el, i) => {
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.intersectionRatio >= 0.5) {
-            setActiveIndex(i);
-          }
-        },
-        {
-          root: feedListRef.current,
-          threshold: 0.5,
+useEffect(() => {
+  cardRefs.current = cardRefs.current.slice(0, displayVideos.length);
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const index = cardRefs.current.indexOf(entry.target as HTMLDivElement);
+          if (index !== -1) setActiveIndex(index);
         }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
+      });
+    },
+    {
+      root: feedListRef.current,
+      threshold: 0.8, // higher threshold = more "locked in" feel
+    }
+  );
 
-    return () => observers.forEach((obs) => obs.disconnect());
-  }, [displayVideos.map(v => v.id).join(",")]);
+  cardRefs.current.forEach((el) => el && observer.observe(el));
+  return () => observer.disconnect();
+}, [displayVideos.map((v) => v.id).join(",")]);
 
   // Keyboard navigation
   useEffect(() => {
