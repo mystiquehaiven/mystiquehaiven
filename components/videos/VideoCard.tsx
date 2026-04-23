@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
@@ -22,16 +22,22 @@ export default function VideoCard({
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [ready, setReady] = useState(false);
+  const isActiveRef = useRef(isActive);
+  const isMutedRef = useRef(isMuted);
 
-  // HLS setup
+  // Keep refs in sync so HLS callback always sees latest values
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
+  // HLS setup — play immediately on MANIFEST_PARSED if active
   useEffect(() => {
     const video = videoRef.current;
-      console.log("play effect — ready:", ready, "isActive:", isActive);
-
     if (!video) return;
-
-    setReady(false);
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -40,29 +46,34 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log("manifest parsed, isActive:", isActive);
-
-        setReady(true);
+        video.muted = isMutedRef.current;
+        if (isActiveRef.current) {
+          video.play().catch((err) => console.error("play failed:", err));
+        }
       });
 
       return () => {
         hls.destroy();
         hlsRef.current = null;
-        setReady(false);
       };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari native HLS
       video.src = playbackUrl;
-      const onCanPlay = () => setReady(true);
-      video.addEventListener("canplay", onCanPlay);
-      return () => video.removeEventListener("canplay", onCanPlay);
+      video.addEventListener("canplay", () => {
+        video.muted = isMutedRef.current;
+        if (isActiveRef.current) {
+          video.play().catch((err) => console.error("play failed:", err));
+        }
+      }, { once: true });
     }
   }, [playbackUrl]);
 
-  // Play/pause — only fires once stream is ready
+  // Play/pause when active state changes after stream is ready
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !ready) return;
+    if (!video) return;
+
+    // If HLS isn't ready yet, MANIFEST_PARSED will handle it
+    if (!hlsRef.current && !video.src) return;
 
     video.muted = isMuted;
 
@@ -72,7 +83,7 @@ export default function VideoCard({
       video.pause();
       video.currentTime = 0;
     }
-  }, [isActive, ready, isMuted]);
+  }, [isActive, isMuted]);
 
   // Mute sync
   useEffect(() => {
