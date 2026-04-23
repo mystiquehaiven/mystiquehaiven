@@ -25,6 +25,7 @@ export default function VideoCard({
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
   const manifestReadyRef = useRef(false);
+  const isMountedPlayRef = useRef(true); // true on first render, prevents effect from playing before manifest
 
   // Keep refs in sync
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
@@ -36,6 +37,7 @@ export default function VideoCard({
     if (!video) return;
 
     manifestReadyRef.current = false;
+    isMountedPlayRef.current = true;
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -45,6 +47,7 @@ export default function VideoCard({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         manifestReadyRef.current = true;
+        isMountedPlayRef.current = false;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -60,6 +63,7 @@ export default function VideoCard({
       video.src = playbackUrl;
       video.addEventListener("canplay", () => {
         manifestReadyRef.current = true;
+        isMountedPlayRef.current = false;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -68,13 +72,15 @@ export default function VideoCard({
     }
   }, [playbackUrl]);
 
-  // Handle active/mute changes — also triggers play if manifest already ready
+  // Handle active/mute changes after initial mount play is handled
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     video.muted = isMuted;
 
+    // Skip on initial mount — MANIFEST_PARSED handles first play
+    if (isMountedPlayRef.current) return;
     if (!manifestReadyRef.current) return;
 
     if (isActive) {
