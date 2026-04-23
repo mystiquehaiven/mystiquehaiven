@@ -27,6 +27,8 @@ export default function VideoCard({
   // HLS setup
   useEffect(() => {
     const video = videoRef.current;
+      console.log("play effect — ready:", ready, "isActive:", isActive);
+
     if (!video) return;
 
     setReady(false);
@@ -38,6 +40,8 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log("manifest parsed, isActive:", isActive);
+
         setReady(true);
       });
 
