@@ -47,20 +47,12 @@ useEffect(() => {
       className="video-card"
       onContextMenu={(e) => e.preventDefault()}
     >
-      <video
-        ref={videoRef}
-        src={playbackUrl}
-        poster={thumbnailUrl}
-        loop
-        playsInline
-        muted={isMuted}
-        controls={false}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture
-        onContextMenu={(e) => e.preventDefault()}
-        style={{ WebkitTouchCallout: "none", userSelect: "none" } as React.CSSProperties}
-        className="video-element"
-      />
+<iframe
+  src={`https://iframe.mediadelivery.net/embed/{libraryId}/${bunnyVideoId}?autoplay=true&loop=true&muted=true`}
+  allow="autoplay"
+  allowFullScreen={false}
+  style={{ border: "none", width: "100%", height: "100%" }}
+/>
     </div>
   );
 }
