@@ -21,40 +21,55 @@ export default function VideoCard({
   isMuted,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  
 
-useEffect(() => {
-  const video = videoRef.current;
-  if (!video) return;
-
-  if (Hls.isSupported()) {
-    const hls = new Hls();
-    hls.loadSource(playbackUrl);
-    hls.attachMedia(video);
-    return () => hls.destroy();
-  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-    // Safari — native HLS
-    video.src = playbackUrl;
-  }
-}, [playbackUrl]);
-
-  // Sync mute state independently of play state
+  // HLS setup
   useEffect(() => {
     const video = videoRef.current;
-    if (video) video.muted = isMuted;
-  }, [isMuted]);
+    if (!video) return;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(playbackUrl);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = playbackUrl;
+    }
+  }, [playbackUrl]);
+
+  // Play/pause based on active state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = isMuted;
+
+    if (isActive) {
+      video.play().catch((err) => console.error("play failed:", err));
+    } else {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, [isActive, isMuted]);
 
   return (
     <div
       className="video-card"
       onContextMenu={(e) => e.preventDefault()}
     >
-<iframe
-  src={`https://iframe.mediadelivery.net/embed/{libraryId}/${bunnyVideoId}?autoplay=true&loop=true&muted=true`}
-  allow="autoplay"
-  allowFullScreen={false}
-  style={{ border: "none", width: "100%", height: "100%" }}
-/>
+      <video
+        ref={videoRef}
+        poster={thumbnailUrl}
+        loop
+        playsInline
+        muted={isMuted}
+        controls={false}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ WebkitTouchCallout: "none", userSelect: "none" } as React.CSSProperties}
+        className="video-element"
+      />
     </div>
   );
 }
