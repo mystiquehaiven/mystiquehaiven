@@ -21,23 +21,20 @@ export default function VideoCard({
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+useEffect(() => {
+  const video = videoRef.current;
+  console.log("VideoCard effect — isActive:", isActive, "video:", video);
+  if (!video) return;
 
-    video.muted = isMuted;
+  video.muted = isMuted;
 
-    if (isActive) {
-      video.play().catch(() => {
-        // Autoplay blocked — mute and retry
-        video.muted = true;
-        video.play().catch(() => {});
-      });
-    } else {
-      video.pause();
-      video.currentTime = 0;
-    }
-  }, [isActive, isMuted]);
+  if (isActive) {
+    video.play().catch((err) => console.error("play failed:", err));
+  } else {
+    video.pause();
+    video.currentTime = 0;
+  }
+}, [isActive, isMuted]);
 
   // Sync mute state independently of play state
   useEffect(() => {
