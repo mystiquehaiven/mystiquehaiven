@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
@@ -22,30 +22,45 @@ export default function VideoCard({
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const [ready, setReady] = useState(false);
 
-  // HLS setup — only re-runs when playbackUrl changes
+  // HLS setup
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    setReady(false);
 
     if (Hls.isSupported()) {
       const hls = new Hls();
       hlsRef.current = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setReady(true);
+      });
+
       return () => {
         hls.destroy();
         hlsRef.current = null;
+        setReady(false);
       };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari native HLS
       video.src = playbackUrl;
+      const onCanPlay = () => setReady(true);
+      video.addEventListener("canplay", onCanPlay);
+      return () => video.removeEventListener("canplay", onCanPlay);
     }
   }, [playbackUrl]);
 
-  // Play/pause — re-runs when active state changes
+  // Play/pause — only fires once stream is ready
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !ready) return;
+
+    video.muted = isMuted;
 
     if (isActive) {
       video.play().catch((err) => console.error("play failed:", err));
@@ -53,9 +68,9 @@ export default function VideoCard({
       video.pause();
       video.currentTime = 0;
     }
-  }, [isActive]);
+  }, [isActive, ready, isMuted]);
 
-  // Mute sync — re-runs when mute state changes
+  // Mute sync
   useEffect(() => {
     const video = videoRef.current;
     if (video) video.muted = isMuted;
