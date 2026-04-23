@@ -67,29 +67,25 @@ export default function VideoCard({
     }
   }, [playbackUrl]);
 
-  // Play/pause when active state changes after stream is ready
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+useEffect(() => {
+  const video = videoRef.current;
+  if (!video) return;
 
-    // If HLS isn't ready yet, MANIFEST_PARSED will handle it
-    if (!hlsRef.current && !video.src) return;
+  if (!hlsRef.current && !video.src) return;
 
-    video.muted = isMuted;
+  video.muted = isMuted;
 
-    if (isActive) {
-      video.play().catch((err) => console.error("play failed:", err));
-    } else {
+  if (isActive) {
+    video.play().catch((err) => console.error("play failed:", err));
+  } else {
+    if (!video.paused) {
       video.pause();
       video.currentTime = 0;
     }
-  }, [isActive, isMuted]);
+  }
+}, [isActive, isMuted]);
 
-  // Mute sync
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) video.muted = isMuted;
-  }, [isMuted]);
+
 
   return (
     <div
