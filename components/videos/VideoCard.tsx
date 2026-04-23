@@ -85,7 +85,11 @@ export default function VideoCard({
     }
   }, [isActive, isMuted]);
 
-
+  // Mute sync
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.muted = isMuted;
+  }, [isMuted]);
 
   return (
     <div
