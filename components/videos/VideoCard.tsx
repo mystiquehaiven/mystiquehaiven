@@ -24,20 +24,18 @@ export default function VideoCard({
   const hlsRef = useRef<Hls | null>(null);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
+  const manifestReadyRef = useRef(false);
 
-  // Keep refs in sync so HLS callback always sees latest values
-  useEffect(() => {
-    isActiveRef.current = isActive;
-  }, [isActive]);
+  // Keep refs in sync
+  useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
-  useEffect(() => {
-    isMutedRef.current = isMuted;
-  }, [isMuted]);
-
-  // HLS setup — play immediately on MANIFEST_PARSED if active
+  // HLS setup
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    manifestReadyRef.current = false;
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -46,6 +44,7 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        manifestReadyRef.current = true;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -55,10 +54,12 @@ export default function VideoCard({
       return () => {
         hls.destroy();
         hlsRef.current = null;
+        manifestReadyRef.current = false;
       };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
       video.addEventListener("canplay", () => {
+        manifestReadyRef.current = true;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -67,25 +68,20 @@ export default function VideoCard({
     }
   }, [playbackUrl]);
 
-useEffect(() => {
-  const video = videoRef.current;
-  if (!video) return;
+  // Handle active state changes ONLY after manifest is ready
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !manifestReadyRef.current) return;
 
-  if (!hlsRef.current && !video.src) return;
+    video.muted = isMuted;
 
-  video.muted = isMuted;
-
-  if (isActive) {
-    video.play().catch((err) => console.error("play failed:", err));
-  } else {
-    if (!video.paused) {
+    if (isActive) {
+      video.play().catch((err) => console.error("play failed:", err));
+    } else if (!video.paused) {
       video.pause();
       video.currentTime = 0;
     }
-  }
-}, [isActive, isMuted]);
-
-
+  }, [isActive, isMuted]);
 
   return (
     <div
