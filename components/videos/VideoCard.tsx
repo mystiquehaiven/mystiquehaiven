@@ -22,19 +22,18 @@ export default function VideoCard({
   const hlsRef = useRef<Hls | null>(null);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
-  const isNearRef = useRef(isNear);
+  const readyRef = useRef(false); // true only after MANIFEST_PARSED
 
-  // Keep refs in sync — never trigger HLS re-init
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-  useEffect(() => { isNearRef.current = isNear; }, [isNear]);
 
-  // HLS init — only runs when playbackUrl changes, never on isActive/isNear changes
+  // HLS init
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Destroy any existing instance
+    readyRef.current = false;
+
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -47,6 +46,7 @@ export default function VideoCard({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        readyRef.current = true;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -60,6 +60,7 @@ export default function VideoCard({
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
       video.addEventListener("canplay", () => {
+        readyRef.current = true;
         video.muted = isMutedRef.current;
         if (isActiveRef.current) {
           video.play().catch((err) => console.error("play failed:", err));
@@ -68,17 +69,18 @@ export default function VideoCard({
     }
 
     return () => {
+      readyRef.current = false;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [playbackUrl]); // only playbackUrl — never isActive or isNear
+  }, [playbackUrl]);
 
-  // Play/pause when active state changes — only if HLS already ready
+  // Play/pause for active state changes — skips until MANIFEST_PARSED has fired
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hlsRef.current) return;
+    if (!video || !readyRef.current) return;
 
     video.muted = isMuted;
 
