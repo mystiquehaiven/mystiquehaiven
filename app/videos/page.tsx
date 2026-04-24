@@ -23,36 +23,37 @@ export default function VideosPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        router.replace("/signin");
-        return;
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    if (!u) {
+      router.replace("/signin");
+      return;
+    }
+
+    setUser(u);
+    const token = await u.getIdToken();
+
+    const res = await fetch("/api/videos", { headers: { Authorization: `Bearer ${token}` } });
+
+    if (res.ok) {
+      const data = await res.json();
+      setVideos(data.videos);
+
+      const counts: Record<string, number> = {};
+      for (const video of data.videos) {
+        for (const tag of video.tags ?? []) {
+          counts[tag] = (counts[tag] ?? 0) + 1;
+        }
       }
+      setTagCounts(counts);
+    }
 
-      setUser(u);
-      const token = await u.getIdToken();
+    setLoading(false);
+  });
 
-      const [videosRes, tagRes] = await Promise.all([
-        fetch("/api/videos", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/videos/tag-counts", { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+  return () => unsubscribe();
+}, [router]);
 
-      if (videosRes.ok) {
-        const data = await videosRes.json();
-        setVideos(data.videos);
-      }
-
-      if (tagRes.ok) {
-        const data = await tagRes.json();
-        setTagCounts(data.counts);
-      }
-
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
 
   if (loading) {
     return (
