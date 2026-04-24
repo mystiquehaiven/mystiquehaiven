@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
@@ -27,13 +27,40 @@ export default function VideoCard({
   isMuted,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const readyRef = useRef(false);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+  // Track fullscreen state
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const handleFullscreen = useCallback(() => {
+    const card = cardRef.current;
+    const video = videoRef.current;
+    if (!card || !video) return;
+
+    // iOS Safari — only supports fullscreen on the video element itself
+    if ((video as any).webkitEnterFullscreen) {
+      (video as any).webkitEnterFullscreen();
+      return;
+    }
+
+    if (!document.fullscreenElement) {
+      card.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
 
   const syncPlayback = useCallback((video: HTMLVideoElement) => {
     video.muted = isMutedRef.current;
@@ -48,7 +75,6 @@ export default function VideoCard({
   // HLS init — runs when entering "near" range, destroyed when leaving
   useEffect(() => {
     if (!isNear && !isActive) {
-      // Fully outside the preload window — destroy and release resources
       readyRef.current = false;
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -58,7 +84,7 @@ export default function VideoCard({
       if (video) {
         video.pause();
         video.removeAttribute("src");
-        video.load(); // forces browser to release buffered data
+        video.load();
       }
       return;
     }
@@ -66,7 +92,6 @@ export default function VideoCard({
     const video = videoRef.current;
     if (!video) return;
 
-    // Already initialized for this URL — don't reinitialize
     if (hlsRef.current) return;
 
     readyRef.current = false;
@@ -79,7 +104,6 @@ export default function VideoCard({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         readyRef.current = true;
-        // startLoad(-1) buffers from position 0 whether or not we're playing
         hls.startLoad(-1);
         syncPlayback(video);
       });
@@ -114,7 +138,7 @@ export default function VideoCard({
   }, [isActive, isMuted, syncPlayback]);
 
   return (
-    <div className="video-card" onContextMenu={(e) => e.preventDefault()}>
+    <div ref={cardRef} className="video-card" onContextMenu={(e) => e.preventDefault()}>
       <video
         ref={videoRef}
         poster={thumbnailUrl}
@@ -122,12 +146,36 @@ export default function VideoCard({
         playsInline
         muted={isMuted}
         controls={false}
-        controlsList="nodownload nofullscreen noremoteplayback"
+        controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         onContextMenu={(e) => e.preventDefault()}
         style={{ WebkitTouchCallout: "none", userSelect: "none" } as React.CSSProperties}
         className="video-element"
       />
+
+      {isActive && (
+        <button
+          className="fullscreen-fab"
+          onClick={handleFullscreen}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {isFullscreen ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+              <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+              <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+              <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -3,19 +3,24 @@
 import { useState, useEffect } from "react";
 import { PREDEFINED_TAGS } from "@/lib/tags";
 
+type SortMode = "random" | "newest" | "oldest";
+
 interface TagFilterModalProps {
   selectedTags: string[];
+  sortMode: SortMode;
   tagCounts: Record<string, number>;
-  onApply: (tags: string[]) => void;
+  onApply: (tags: string[], sort: SortMode) => void;
 }
 
-export default function TagFilterModal({ selectedTags, tagCounts, onApply }: TagFilterModalProps) {
+export default function TagFilterModal({ selectedTags, sortMode, tagCounts, onApply }: TagFilterModalProps) {
   const [open, setOpen] = useState(false);
   const [localTags, setLocalTags] = useState<string[]>(selectedTags);
+  const [localSort, setLocalSort] = useState<SortMode>(sortMode);
 
   useEffect(() => {
     setLocalTags(selectedTags);
-  }, [selectedTags]);
+    setLocalSort(sortMode);
+  }, [selectedTags, sortMode]);
 
   const toggle = (tag: string) => {
     setLocalTags((prev) =>
@@ -24,7 +29,7 @@ export default function TagFilterModal({ selectedTags, tagCounts, onApply }: Tag
   };
 
   const handleApply = () => {
-    onApply(localTags);
+    onApply(localTags, localSort);
     setOpen(false);
   };
 
@@ -34,9 +39,14 @@ export default function TagFilterModal({ selectedTags, tagCounts, onApply }: Tag
 
   const availableTags = PREDEFINED_TAGS.filter((tag) => (tagCounts[tag] ?? 0) > 0);
 
+  const sortOptions: { value: SortMode; label: string }[] = [
+    { value: "random", label: "random" },
+    { value: "newest", label: "newest" },
+    { value: "oldest", label: "oldest" },
+  ];
+
   return (
     <>
-      {/* Floating filter button */}
       <button
         onClick={() => setOpen(true)}
         className="filter-fab"
@@ -52,16 +62,14 @@ export default function TagFilterModal({ selectedTags, tagCounts, onApply }: Tag
         )}
       </button>
 
-      {/* Backdrop */}
       {open && (
         <div className="modal-backdrop" onClick={() => setOpen(false)} />
       )}
 
-      {/* Modal */}
       {open && (
         <div className="filter-modal">
           <div className="filter-modal-header">
-            <span className="filter-modal-title">filter</span>
+            <span className="filter-modal-title">filter & sort</span>
             <button className="filter-modal-close" onClick={() => setOpen(false)} aria-label="Close">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -70,6 +78,22 @@ export default function TagFilterModal({ selectedTags, tagCounts, onApply }: Tag
             </button>
           </div>
 
+          {/* Sort section */}
+          <div className="filter-section-label">sort</div>
+          <div className="filter-sort-row">
+            {sortOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setLocalSort(value)}
+                className={`filter-sort-btn ${localSort === value ? "selected" : ""}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tags section */}
+          <div className="filter-section-label">tags</div>
           <div className="filter-tags-grid">
             {availableTags.map((tag) => (
               <button
