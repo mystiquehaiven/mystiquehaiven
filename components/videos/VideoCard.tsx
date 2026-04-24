@@ -11,6 +11,14 @@ interface VideoCardProps {
   isMuted: boolean;
 }
 
+const HLS_CONFIG = {
+  maxBufferLength: 8,
+  maxMaxBufferLength: 15,
+  startLevel: 0,
+  abrEwmaDefaultEstimate: 2_000_000,
+  enableWorker: true,
+};
+
 export default function VideoCard({
   playbackUrl,
   thumbnailUrl,
@@ -37,26 +45,42 @@ export default function VideoCard({
     }
   }, []);
 
-  // HLS init
+  // HLS init — runs when entering "near" range, destroyed when leaving
   useEffect(() => {
+    if (!isNear && !isActive) {
+      // Fully outside the preload window — destroy and release resources
+      readyRef.current = false;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      const video = videoRef.current;
+      if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load(); // forces browser to release buffered data
+      }
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
 
+    // Already initialized for this URL — don't reinitialize
+    if (hlsRef.current) return;
+
     readyRef.current = false;
 
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
-
     if (Hls.isSupported()) {
-      const hls = new Hls();
+      const hls = new Hls(HLS_CONFIG);
       hlsRef.current = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         readyRef.current = true;
+        // startLoad(-1) buffers from position 0 whether or not we're playing
+        hls.startLoad(-1);
         syncPlayback(video);
       });
 
@@ -66,6 +90,7 @@ export default function VideoCard({
 
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
+      video.load();
       video.addEventListener("canplay", () => {
         readyRef.current = true;
         syncPlayback(video);
@@ -79,9 +104,9 @@ export default function VideoCard({
         hlsRef.current = null;
       }
     };
-  }, [playbackUrl, syncPlayback]);
+  }, [isNear, isActive, playbackUrl, syncPlayback]);
 
-  // Play/pause on active/mute changes — only after manifest is ready
+  // Sync play/pause when active or mute state changes
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !readyRef.current) return;
