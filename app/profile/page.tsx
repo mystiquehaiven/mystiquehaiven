@@ -132,7 +132,7 @@ export default function ProfilePage() {
             <NavTile
               label="General Collection"
               description="The full curated library"
-              onClick={() => router.push("/feed/collection")}
+              onClick={() => router.push("/videos")}
               available={subscribed}
             />
 

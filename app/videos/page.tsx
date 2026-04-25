@@ -33,7 +33,7 @@ useEffect(() => {
     setUser(u);
     const token = await u.getIdToken();
 
-    const res = await fetch("/api/videos", { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch("/api/videos?feed=general", { headers: { Authorization: `Bearer ${token}` } });
 
     if (res.ok) {
       const data = await res.json();

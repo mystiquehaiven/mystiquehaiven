@@ -1,0 +1,1 @@
+export const NEW_CONTENT_COUNT = 20;
