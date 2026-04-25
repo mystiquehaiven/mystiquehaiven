@@ -66,7 +66,7 @@ export default function SignInPage() {
     if (tokenResult.claims.admin) {
       router.push("/admin");
     } else {
-      router.push("/");
+      router.push("/profile");
     }
   };
 
