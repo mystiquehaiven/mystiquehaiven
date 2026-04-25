@@ -121,16 +121,18 @@ export default function ProfilePage() {
           <div className="space-y-2">
 
             {/* Always available */}
-            <NavTile
-              label="Free Preview"
-              description="A rotating selection, refreshed every 24 hours"
-              onClick={() => router.push("/feed/preview")}
-              available
-            />
+            {!subscribed && (
+              <NavTile
+                label="Free Preview"
+                description="A rotating selection, refreshed every 24 hours"
+                onClick={() => router.push("/feed/preview")}
+                available
+              />
+            )}
 
             {/* Standard + above */}
             <NavTile
-              label="General Collection"
+              label="Video Feed"
               description="The full curated library"
               onClick={() => router.push("/videos")}
               available={subscribed}
@@ -138,7 +140,7 @@ export default function ProfilePage() {
 
             {/* Exclusive only */}
             <NavTile
-              label="Curated Collections"
+              label="Collections"
               description="Hand-selected thematic series"
               onClick={() => router.push("/feed/curated")}
               available={hasExclusive}
@@ -146,9 +148,9 @@ export default function ProfilePage() {
             />
 
             <NavTile
-              label={`New — Last ${NEW_CONTENT_COUNT} Uploads`}
+              label={`Newest`}
               description="First access to everything recent"
-              onClick={() => router.push("/feed/new")}
+              onClick={() => router.push("/videos/new")}
               available={hasExclusive}
               exclusive
             />
