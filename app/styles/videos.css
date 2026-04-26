@@ -97,6 +97,12 @@
   right: 24px;
 }
 
+.fullscreen-fab {
+  position: absolute;
+  bottom: 4.5rem; /* clears the mute-fab height + gap */
+  right: 1rem;
+}
+
 .filter-fab {
   bottom: 76px;
   right: 24px;
