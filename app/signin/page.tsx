@@ -4,9 +4,10 @@ import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getTermsContent, getTermsVersion } from "@/lib/getTerms";
 
-type ModalState = "idle" | "age-verify" | "denied";
+type ModalState = "idle" | "age-verify" | "tos" | "denied";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -15,6 +16,15 @@ export default function SignInPage() {
     uid: string;
     email: string | null;
   } | null>(null);
+  const [termsHtml, setTermsHtml] = useState("");
+  const [tosAccepted, setTosAccepted] = useState(false);
+
+  // Load terms when ToS modal opens
+  useEffect(() => {
+    if (modalState === "tos") {
+      getTermsContent().then(setTermsHtml);
+    }
+  }, [modalState]);
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
@@ -26,38 +36,79 @@ export default function SignInPage() {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        // New user — hold off on Firestore write until age is confirmed
+        // New user — show age verification first
         setPendingUser({ uid: user.uid, email: user.email });
         setModalState("age-verify");
         return;
       }
 
-      // Returning user — existing routing logic
+      // Returning user — check if ToS needs re-acceptance
+      const userTosVersion = userSnap.data()?.tosVersion;
+      const currentVersion = getTermsVersion();
+
+      if (userTosVersion !== currentVersion) {
+        // ToS was updated, require re-acceptance
+        setPendingUser({ uid: user.uid, email: user.email });
+        setModalState("tos");
+        return;
+      }
+
+      // All good, route them
       await routeUser(user);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const handleAgeConfirmed = async () => {
+  const handleAgeConfirmed = () => {
+    // Age verified, now show ToS
+    setTosAccepted(false);
+    setModalState("tos");
+  };
+
+  const handleAgeDenied = () => {
+    setPendingUser(null);
+    setTosAccepted(false);
+    setModalState("denied");
+  };
+
+  const handleTosAccepted = async () => {
     if (!pendingUser) return;
     try {
-      await setDoc(doc(db, "users", pendingUser.uid), {
-        email: pendingUser.email,
-        subscriptionStatus: "inactive",
-        subscriptionTier: "none", // "none" | "threshold" | "standard" | "exclusive"
-        ageVerified: true,
-        createdAt: new Date(),
-      });
+      const isNewUser = !(await getDoc(doc(db, "users", pendingUser.uid))).exists();
+
+      await setDoc(
+        doc(db, "users", pendingUser.uid),
+        {
+          email: pendingUser.email,
+          ageVerified: true,
+          ageVerifiedAt: new Date(),
+          tosAcceptedAt: new Date(),
+          tosVersion: getTermsVersion(),
+          ...(isNewUser && {
+            subscriptionStatus: "inactive",
+            subscriptionTier: "none",
+            createdAt: new Date(),
+          }),
+        },
+        { merge: true }
+      );
+
       setModalState("idle");
-      router.push("/profile");
+      setTosAccepted(false);
+
+      const user = auth.currentUser;
+      if (user) {
+        await routeUser(user);
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
-  const handleAgeDenied = () => {
+  const handleTosDenied = () => {
     setPendingUser(null);
+    setTosAccepted(false);
     setModalState("denied");
   };
 
@@ -103,6 +154,60 @@ export default function SignInPage() {
               >
                 I am under 18
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms of Service Modal */}
+      {modalState === "tos" && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 shadow-xl flex flex-col max-h-[90vh]">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Terms of Service
+            </h2>
+
+            {/* Scrollable Terms Content */}
+            <div className="flex-1 overflow-y-auto mb-6 pr-4 text-sm text-gray-700 border border-gray-200 rounded p-4">
+              {termsHtml ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: termsHtml }}
+                  className="prose prose-sm max-w-none"
+                />
+              ) : (
+                <p>Loading terms...</p>
+              )}
+            </div>
+
+            {/* Checkbox + Buttons */}
+            <div className="border-t pt-4">
+              <label className="flex items-start gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={tosAccepted}
+                  onChange={(e) => setTosAccepted(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm text-gray-700">
+                  I have read and agree to the Terms of Service
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleTosAccepted}
+                  disabled={!tosAccepted}
+                  className="flex-1 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Accept and Continue
+                </button>
+                <button
+                  onClick={handleTosDenied}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                >
+                  Decline
+                </button>
+              </div>
             </div>
           </div>
         </div>
