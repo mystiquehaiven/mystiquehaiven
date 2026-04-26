@@ -7,6 +7,6 @@ export async function fetchTermsContent() {
   return await getTermsContent();
 }
 
-export function getTermsVersionAction() {
+export async function getTermsVersionAction() {
   return getTermsVersion();
 }
