@@ -5,7 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { getTermsContent, getTermsVersion } from "@/lib/getTerms";
+import { fetchTermsContent, getTermsVersionAction } from "@/app/actions/terms";
 
 type ModalState = "idle" | "age-verify" | "tos" | "denied";
 
@@ -22,7 +22,7 @@ export default function SignInPage() {
   // Load terms when ToS modal opens
   useEffect(() => {
     if (modalState === "tos") {
-      getTermsContent().then(setTermsHtml);
+      fetchTermsContent().then(setTermsHtml);
     }
   }, [modalState]);
 
@@ -44,7 +44,7 @@ export default function SignInPage() {
 
       // Returning user — check if ToS needs re-acceptance
       const userTosVersion = userSnap.data()?.tosVersion;
-      const currentVersion = getTermsVersion();
+      const currentVersion = await getTermsVersionAction();
 
       if (userTosVersion !== currentVersion) {
         // ToS was updated, require re-acceptance
@@ -75,6 +75,7 @@ export default function SignInPage() {
   const handleTosAccepted = async () => {
     if (!pendingUser) return;
     try {
+      const currentVersion = await getTermsVersionAction();
       const isNewUser = !(await getDoc(doc(db, "users", pendingUser.uid))).exists();
 
       await setDoc(
@@ -84,7 +85,7 @@ export default function SignInPage() {
           ageVerified: true,
           ageVerifiedAt: new Date(),
           tosAcceptedAt: new Date(),
-          tosVersion: getTermsVersion(),
+          tosVersion: currentVersion,
           ...(isNewUser && {
             subscriptionStatus: "inactive",
             subscriptionTier: "none",
