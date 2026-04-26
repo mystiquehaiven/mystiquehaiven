@@ -1,6 +1,6 @@
 TERMS OF SERVICE
 MYSTIQUE hAIven
-Effective Date: January 1, 2025
+Effective Date: April 26, 2026
 
 1. Acceptance of Terms
 
@@ -103,4 +103,4 @@ For questions, concerns, or requests regarding these Terms of Service, please co
 
 ---
 
-Last Updated: January 1, 2025
+Last Updated: January 26, 2026
