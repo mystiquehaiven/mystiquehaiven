@@ -104,8 +104,8 @@
 
 .share-fab {
   position: absolute;
-  bottom: 56px; /* stack above fullscreen-fab — adjust to match your layout */
-  right: 12px;
+  bottom: 108px; /* stack above fullscreen-fab — adjust to match your layout */
+  right: 24px;
   z-index: 10;
   /* match whatever styles fullscreen-fab has */
 }
