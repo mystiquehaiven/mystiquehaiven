@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import Footer from "@/components/footer";
 
 const NEW_CONTENT_COUNT = 20;
 
@@ -208,6 +209,8 @@ export default function ProfilePage() {
         </button>
 
       </div>
+
+      <Footer />
     </div>
   );
 }
