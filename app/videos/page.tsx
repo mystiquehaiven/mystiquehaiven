@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { Suspense } from "react";
 import VideoFeed from "@/components/videos/VideoFeed";
 import "../styles/videos.css"
 
@@ -65,5 +66,9 @@ useEffect(() => {
 
   if (!user) return null;
 
-  return <VideoFeed videos={videos} tagCounts={tagCounts} />;
+  return (
+    <Suspense>
+      <VideoFeed videos={videos} tagCounts={tagCounts} />
+    </Suspense>
+  )
 }

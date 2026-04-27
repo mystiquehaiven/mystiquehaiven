@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import Hls from "hls.js";
 
 interface VideoCardProps {
+  videoId: string;
   playbackUrl: string;
   thumbnailUrl: string;
   isActive: boolean;
@@ -20,6 +21,7 @@ const HLS_CONFIG = {
 };
 
 export default function VideoCard({
+  videoId,
   playbackUrl,
   thumbnailUrl,
   isActive,
@@ -33,11 +35,11 @@ export default function VideoCard({
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<"idle" | "copied" | "shared">("idle");
 
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
-  // Track fullscreen state
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onChange);
@@ -49,7 +51,6 @@ export default function VideoCard({
     const video = videoRef.current;
     if (!card || !video) return;
 
-    // iOS Safari — only supports fullscreen on the video element itself
     if ((video as any).webkitEnterFullscreen) {
       (video as any).webkitEnterFullscreen();
       return;
@@ -62,6 +63,26 @@ export default function VideoCard({
     }
   }, []);
 
+  const handleShare = useCallback(async () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("v", videoId);
+    const shareUrl = url.toString();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ url: shareUrl });
+        setShareFeedback("shared");
+      } catch {
+        // user dismissed the sheet — do nothing
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareFeedback("copied");
+    }
+
+    setTimeout(() => setShareFeedback("idle"), 2000);
+  }, [videoId]);
+
   const syncPlayback = useCallback((video: HTMLVideoElement) => {
     video.muted = isMutedRef.current;
     if (isActiveRef.current) {
@@ -72,7 +93,6 @@ export default function VideoCard({
     }
   }, []);
 
-  // HLS init — runs when entering "near" range, destroyed when leaving
   useEffect(() => {
     if (!isNear && !isActive) {
       readyRef.current = false;
@@ -91,7 +111,6 @@ export default function VideoCard({
 
     const video = videoRef.current;
     if (!video) return;
-
     if (hlsRef.current) return;
 
     readyRef.current = false;
@@ -111,7 +130,6 @@ export default function VideoCard({
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) console.error("HLS fatal error:", data.type, data.details);
       });
-
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
       video.load();
@@ -130,7 +148,6 @@ export default function VideoCard({
     };
   }, [isNear, isActive, playbackUrl, syncPlayback]);
 
-  // Sync play/pause when active or mute state changes
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !readyRef.current) return;
@@ -154,27 +171,47 @@ export default function VideoCard({
       />
 
       {isActive && (
-        <button
-          className="fullscreen-fab"
-          onClick={handleFullscreen}
-          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        >
-          {isFullscreen ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-              <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-              <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-              <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-            </svg>
-          )}
-        </button>
+        <>
+          <button
+            className="fullscreen-fab"
+            onClick={handleFullscreen}
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              </svg>
+            )}
+          </button>
+
+          <button
+            className="share-fab"
+            onClick={handleShare}
+            aria-label="Share video"
+          >
+            {shareFeedback === "copied" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            )}
+          </button>
+        </>
       )}
     </div>
   );

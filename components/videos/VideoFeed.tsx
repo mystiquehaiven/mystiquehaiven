@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 
@@ -49,18 +50,39 @@ function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMo
 }
 
 export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
+  const searchParams = useSearchParams();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortMode, setSortMode] = useState<SortMode>("random"); // ADDED
+  const [sortMode, setSortMode] = useState<SortMode>("random");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const feedListRef = useRef<HTMLDivElement>(null);
+  const didScrollToTarget = useRef(false); // prevent re-triggering after user scrolls
+
 
   // REPLACED: filteredVideos/displayVideos replaced with memoized processVideos
   const displayVideos = useMemo(
     () => processVideos(videos, selectedTags, sortMode),
     [videos, selectedTags, sortMode]
   );
+
+    // Scroll to shared video on first render
+  useEffect(() => {
+    const targetId = searchParams.get("v");
+    if (!targetId || didScrollToTarget.current || displayVideos.length === 0) return;
+
+    const index = displayVideos.findIndex((v) => v.id === targetId);
+    if (index === -1) return;
+
+    didScrollToTarget.current = true;
+    setActiveIndex(index);
+
+    // rAF ensures the feed-list items have mounted before scrolling
+    requestAnimationFrame(() => {
+      cardRefs.current[index]?.scrollIntoView({ behavior: "instant" });
+    });
+  }, [displayVideos, searchParams]);
+
 
   useEffect(() => {
     cardRefs.current = cardRefs.current.slice(0, displayVideos.length);
@@ -155,6 +177,7 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
             className="feed-item"
           >
             <VideoCard
+              videoId={video.id}
               playbackUrl={video.playbackUrl}
               thumbnailUrl={video.thumbnailUrl}
               isActive={i === activeIndex}

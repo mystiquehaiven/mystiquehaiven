@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Mystique Haiven",
-  description: "Best AI Porn Gallery",
-  keywords: ["AI", "Porn", "NSFW", "Uncensored", "Nudes", "Naked", "Boobs", "Stripping", "Flashing"],
+  description: "Best AI Gallery",
+  keywords: ["AI", "Images", "Gallery"],
 };
 
 export default function RootLayout({
