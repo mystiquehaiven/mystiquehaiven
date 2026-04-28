@@ -32,7 +32,7 @@ Your subscription fee grants you the right to stream and view all curated conten
 
 4.2 Content Availability and Rotation
 
-The Platform features curated, licensed content that may change, rotate, or become unavailable at any time due to licensing agreements, updates to curation, or other operational reasons. We do not guarantee that any specific content will remain available during your subscription. Specific videos or content may be removed, replaced, or modified without notice. Continued access to the Platform does not guarantee access to any specific video or content item.
+The Platform features curated content that may change, rotate, or become unavailable at any time due to updates to curation, or other operational reasons. We do not guarantee that any specific content will remain available during your subscription. Specific videos or content may be removed, replaced, or modified without notice. Continued access to the Platform does not guarantee access to any specific video or content item.
 
 4.3 Billing, Renewal, and Cancellation
 
@@ -55,7 +55,8 @@ You agree not to use the Platform in any manner that:
 
 6. Intellectual Property Rights
 
-All content on the Platform, including but not limited to code, design, graphics, text, and video materials, is the property of MYSTIQUE hAIven or its licensors. You are granted a limited, non-exclusive, non-transferable license to view and access content for personal, non-commercial purposes only. You may not reproduce, distribute, modify, create derivative works from, or publicly display any content without prior written permission. Video content is sourced and licensed from third-party providers, and all rights associated with that content remain with the original licensors.
+The Platform itself — including its code, design, interface, and curation — is the property of MYSTIQUE hAIven and is protected by applicable intellectual property law. You are granted a limited, non-exclusive, non-transferable license to access and view Platform content for personal, non-commercial purposes only.
+AI-generated content on the Platform may not be protected by copyright under applicable law. Regardless, your access to and use of content through the Platform is governed by these Terms. You may not download, reproduce, screen capture, or otherwise extract content from the Platform without prior written permission. We reserve the right to enforce these restrictions technically and contractually.
 
 7. Content Disclaimer
 
@@ -103,4 +104,4 @@ For questions, concerns, or requests regarding these Terms of Service, please co
 
 ---
 
-Last Updated: January 26, 2026
+Last Updated: April 27, 2026

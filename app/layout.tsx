@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Mystique Haiven",
   description: "Best AI Gallery",
   keywords: ["AI", "Images", "Gallery"],
+  verification: {
+    google: 'SM2ugtAtEz2ecd3lFxnK4ThFnyHuhhjdTF6Es9cVy_0',
+  },
 };
 
 export default function RootLayout({
