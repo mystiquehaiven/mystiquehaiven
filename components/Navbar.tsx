@@ -28,7 +28,7 @@ export default function Navbar() {
   }, [])
 
   return (
-    <div ref={menuRef} className="fixed top-4 right-4 z-50">
+    <div ref={menuRef} className="fixed top-4 right-14 z-50">
       {/* Hamburger button */}
       <button
         onClick={() => setOpen(prev => !prev)}
