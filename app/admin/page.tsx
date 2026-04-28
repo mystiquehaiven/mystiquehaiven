@@ -6,6 +6,7 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import UploadForm from "@/components/admin/UploadForm";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
 
 
 export default function AdminPage() {
@@ -61,11 +62,7 @@ useEffect(() => {
 
   return (
     <div className="page">
-      <nav className="nav">
-        <Link href="/" className="nav-link">Home</Link>
-        <Link href="/search" className="nav-link">Search</Link>
-        <span className="nav-profile">{user?.displayName ?? user?.email}</span>
-      </nav>
+      <Navbar />
 
       <main className="main">
         <div className="profile-header">
