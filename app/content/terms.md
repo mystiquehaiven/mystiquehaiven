@@ -56,7 +56,7 @@ You agree not to use the Platform in any manner that:
 6. Intellectual Property Rights
 
 The Platform itself — including its code, design, interface, and curation — is the property of MYSTIQUE hAIven and is protected by applicable intellectual property law. You are granted a limited, non-exclusive, non-transferable license to access and view Platform content for personal, non-commercial purposes only.
-AI-generated content on the Platform may not be protected by copyright under applicable law. Regardless, your access to and use of content through the Platform is governed by these Terms. You may not download, reproduce, screen capture, or otherwise extract content from the Platform without prior written permission. We reserve the right to enforce these restrictions technically and contractually.
+Some AI-generated content on the Platform may not be protected by copyright under applicable law. Regardless, your access to and use of content through the Platform is governed by these Terms. You may not download, reproduce, screen capture, or otherwise extract content from the Platform without prior written permission. We reserve the right to enforce these restrictions technically and contractually.
 
 7. Content Disclaimer
 

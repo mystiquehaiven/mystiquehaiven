@@ -5,8 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        disallow: ["/videos", "/videos/new", "/signin", "/api/"],
+        disallow: ["/videos$", "/videos/new", "/signin", "/api/"],
       },
     ],
     sitemap: "https://mystiquehaiven.com/sitemap.xml",
