@@ -1,5 +1,7 @@
 "use client";
 
+import { auth } from "@/lib/firebase";
+import { PREDEFINED_TAGS } from "../../components/admin/UploadForm";
 import { useEffect, useRef, useCallback, useState } from "react";
 import Hls from "hls.js";
 
@@ -7,9 +9,13 @@ interface VideoCardProps {
   videoId: string;
   playbackUrl: string;
   thumbnailUrl: string;
+  tags: string[];
   isActive: boolean;
   isNear: boolean;
   isMuted: boolean;
+  isAdmin?: boolean;
+  onDelete?: (videoId: string) => void;
+  onTagsUpdate?: (videoId: string, tags: string[]) => void;
 }
 
 const HLS_CONFIG = {
@@ -24,9 +30,13 @@ export default function VideoCard({
   videoId,
   playbackUrl,
   thumbnailUrl,
+  tags: initialTags,
   isActive,
   isNear,
   isMuted,
+  isAdmin = false,
+  onDelete,
+  onTagsUpdate,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -34,8 +44,13 @@ export default function VideoCard({
   const readyRef = useRef(false);
   const isActiveRef = useRef(isActive);
   const isMutedRef = useRef(isMuted);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<"idle" | "copied" | "shared">("idle");
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [isSavingTags, setIsSavingTags] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
@@ -46,16 +61,20 @@ export default function VideoCard({
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  const getToken = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
+  }, []);
+
   const handleFullscreen = useCallback(() => {
     const card = cardRef.current;
     const video = videoRef.current;
     if (!card || !video) return;
-
     if ((video as any).webkitEnterFullscreen) {
       (video as any).webkitEnterFullscreen();
       return;
     }
-
     if (!document.fullscreenElement) {
       card.requestFullscreen();
     } else {
@@ -67,21 +86,64 @@ export default function VideoCard({
     const url = new URL(window.location.href);
     url.searchParams.set("v", videoId);
     const shareUrl = url.toString();
-
     if (navigator.share) {
       try {
         await navigator.share({ url: shareUrl });
         setShareFeedback("shared");
       } catch {
-        // user dismissed the sheet — do nothing
+        // user dismissed
       }
     } else {
       await navigator.clipboard.writeText(shareUrl);
       setShareFeedback("copied");
     }
-
     setTimeout(() => setShareFeedback("idle"), 2000);
   }, [videoId]);
+
+  const toggleTag = useCallback((tag: string) => {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }, []);
+
+  const handleSaveTags = useCallback(async () => {
+    setIsSavingTags(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/videos/${videoId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tags }),
+      });
+      if (!res.ok) throw new Error("Failed to save tags");
+      onTagsUpdate?.(videoId, tags);
+      setAdminPanelOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingTags(false);
+    }
+  }, [videoId, tags, getToken, onTagsUpdate]);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm("Delete this video? This cannot be undone.")) return;
+    setIsDeleting(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/videos/${videoId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      onDelete?.(videoId);
+    } catch (err) {
+      console.error(err);
+      setIsDeleting(false);
+    }
+  }, [videoId, getToken, onDelete]);
 
   const syncPlayback = useCallback((video: HTMLVideoElement) => {
     video.muted = isMutedRef.current;
@@ -120,13 +182,11 @@ export default function VideoCard({
       hlsRef.current = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         readyRef.current = true;
         hls.startLoad(-1);
         syncPlayback(video);
       });
-
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) console.error("HLS fatal error:", data.type, data.details);
       });
@@ -211,7 +271,53 @@ export default function VideoCard({
               </svg>
             )}
           </button>
+
+          {isAdmin && (
+            <button
+              className="admin-fab"
+              onClick={() => setAdminPanelOpen((o) => !o)}
+              aria-label="Admin options"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          )}
         </>
+      )}
+
+      {isAdmin && adminPanelOpen && (
+        <div className="admin-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-panel-header">
+            <span>Edit Video</span>
+            <button onClick={() => setAdminPanelOpen(false)} aria-label="Close">✕</button>
+          </div>
+
+          <div className="admin-panel-section">
+            <p className="admin-panel-label">Tags</p>
+            <div className="admin-tag-grid">
+              {PREDEFINED_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`admin-tag-btn ${tags.includes(tag) ? "admin-tag-btn--active" : ""}`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-panel-actions">
+            <button onClick={handleSaveTags} disabled={isSavingTags} className="admin-save-btn">
+              {isSavingTags ? "Saving…" : "Save Tags"}
+            </button>
+            <button onClick={handleDelete} disabled={isDeleting} className="admin-delete-btn">
+              {isDeleting ? "Deleting…" : "Delete Video"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

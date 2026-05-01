@@ -133,6 +133,168 @@
   letter-spacing: -0.02em;
 }
 
+/* Admin FAB — sits above share-fab in the right-side stack */
+.admin-fab {
+  position: absolute;
+  bottom: 210px; /* share-fab(130px) + ~40px height + 40px gap */
+  right: 35px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: color 0.2s, background 0.2s;
+}
+
+.admin-fab:hover {
+  color: #c8a97e;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Admin panel — full card overlay, scrollable */
+.admin-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(10, 10, 10, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.admin-panel-header span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #666;
+}
+
+.admin-panel-header button {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.15s;
+}
+
+.admin-panel-header button:hover {
+  color: #e8e8e8;
+}
+
+.admin-panel-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555;
+  margin: 0 0 0.6rem;
+}
+
+.admin-tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-tag-btn {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  padding: 0.3rem 0.65rem;
+  color: #666;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.admin-tag-btn:hover {
+  border-color: #444;
+  color: #bbb;
+}
+
+.admin-tag-btn--active {
+  border-color: #c8a97e;
+  color: #c8a97e;
+  background: #1a1510;
+}
+
+.admin-panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid #1a1a1a;
+}
+
+.admin-save-btn {
+  flex: 1;
+  background: #e8e8e8;
+  color: #0d0d0d;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.admin-save-btn:hover {
+  background: #fff;
+}
+
+.admin-save-btn:disabled {
+  background: #222;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.admin-delete-btn {
+  flex: 1;
+  background: transparent;
+  color: #8b2020;
+  border: 1px solid #8b2020;
+  border-radius: 6px;
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-delete-btn:hover {
+  background: #8b2020;
+  color: #fff;
+}
+
+.admin-delete-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ─── Filter Modal ────────────────────────────────────────────── */
 
 .filter-section-label {

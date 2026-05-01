@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 
@@ -19,7 +20,6 @@ interface VideoFeedProps {
   tagCounts: Record<string, number>;
 }
 
-// REPLACED: rankVideos removed, replaced with these two
 type SortMode = "random" | "newest" | "oldest";
 
 function shuffleVideos<T>(arr: T[]): T[] {
@@ -49,40 +49,52 @@ function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMo
   return shuffleVideos(filtered);
 }
 
-export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
+export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFeedProps) {
   const searchParams = useSearchParams();
+  const [videos, setVideos] = useState<Video[]>(initialVideos);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortMode, setSortMode] = useState<SortMode>("random");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const feedListRef = useRef<HTMLDivElement>(null);
-  const didScrollToTarget = useRef(false); // prevent re-triggering after user scrolls
+  const didScrollToTarget = useRef(false);
 
+  // Resolve admin status from Firebase token claims
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) { setIsAdmin(false); return; }
+      const token = await user.getIdTokenResult();
+      setIsAdmin(token.claims.admin === true);
+    });
+    return unsubscribe;
+  }, []);
 
-  // REPLACED: filteredVideos/displayVideos replaced with memoized processVideos
+  const handleDelete = useCallback((videoId: string) => {
+    setVideos((prev) => prev.filter((v) => v.id !== videoId));
+  }, []);
+
+  const handleTagsUpdate = useCallback((videoId: string, tags: string[]) => {
+    setVideos((prev) => prev.map((v) => v.id === videoId ? { ...v, tags } : v));
+  }, []);
+
   const displayVideos = useMemo(
     () => processVideos(videos, selectedTags, sortMode),
     [videos, selectedTags, sortMode]
   );
 
-    // Scroll to shared video on first render
   useEffect(() => {
     const targetId = searchParams.get("v");
     if (!targetId || didScrollToTarget.current || displayVideos.length === 0) return;
-
     const index = displayVideos.findIndex((v) => v.id === targetId);
     if (index === -1) return;
-
     didScrollToTarget.current = true;
     setActiveIndex(index);
-
-    // rAF ensures the feed-list items have mounted before scrolling
     requestAnimationFrame(() => {
       cardRefs.current[index]?.scrollIntoView({ behavior: "instant" });
     });
   }, [displayVideos, searchParams]);
-
 
   useEffect(() => {
     cardRefs.current = cardRefs.current.slice(0, displayVideos.length);
@@ -95,17 +107,12 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
           }
         });
       },
-      {
-        root: feedListRef.current,
-        threshold: 0.8,
-      }
+      { root: feedListRef.current, threshold: 0.8 }
     );
-
     cardRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
   }, [displayVideos.map((v) => v.id).join(",")]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
@@ -118,12 +125,10 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
         cardRefs.current[prev]?.scrollIntoView({ behavior: "smooth" });
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, displayVideos.length]);
 
-  // UPDATED: now accepts and sets sortMode too
   const handleApplyTags = useCallback((tags: string[], sort: SortMode) => {
     setSelectedTags(tags);
     setSortMode(sort);
@@ -135,7 +140,6 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
 
   return (
     <div className="feed-container">
-      {/* Mute toggle */}
       <button
         className="mute-fab"
         onClick={() => setIsMuted((m) => !m)}
@@ -156,7 +160,6 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
         )}
       </button>
 
-      {/* UPDATED: passes sortMode and updated onApply signature */}
       <TagFilterModal
         selectedTags={selectedTags}
         sortMode={sortMode}
@@ -164,7 +167,6 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
         onApply={handleApplyTags}
       />
 
-      {/* Feed — UPDATED: key includes sortMode to force remount on sort change */}
       <div
         className="feed-list"
         ref={feedListRef}
@@ -180,9 +182,13 @@ export default function VideoFeed({ videos, tagCounts }: VideoFeedProps) {
               videoId={video.id}
               playbackUrl={video.playbackUrl}
               thumbnailUrl={video.thumbnailUrl}
+              tags={video.tags}
               isActive={i === activeIndex}
               isNear={Math.abs(i - activeIndex) <= 1}
               isMuted={isMuted}
+              isAdmin={isAdmin}
+              onDelete={handleDelete}
+              onTagsUpdate={handleTagsUpdate}
             />
           </div>
         ))}
