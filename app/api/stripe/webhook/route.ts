@@ -204,8 +204,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-// Stripe requires the raw request body for signature verification.
-// This disables Next.js body parsing for this route.
-export const config = {
-  api: { bodyParser: false },
-};
