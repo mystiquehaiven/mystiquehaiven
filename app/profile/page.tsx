@@ -2,50 +2,85 @@
 
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import Footer from "@/components/footer";
+import { useCheckout } from "@/hooks/useCheckout";
 
-const NEW_CONTENT_COUNT = 20;
+type SubscriptionTier = "free" | "standard" | "exclusive";
+type SubscriptionStatus = "active" | "cancelled" | "trial" | null;
 
-type SubscriptionTier = "none" | "threshold" | "standard" | "exclusive";
+interface Subscription {
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  trialExpiresAt: number | null; // unix ms
+  updatedAt: number | null;
+}
 
 interface UserData {
   email: string;
-  subscriptionStatus: string;
-  subscriptionTier: SubscriptionTier;
   ageVerified: boolean;
   createdAt: { toDate: () => Date };
+  subscription: Subscription | null;
 }
 
 const TIER_LABELS: Record<SubscriptionTier, string> = {
-  none: "No Subscription",
-  threshold: "Threshold",
+  free: "No Membership",
   standard: "Standard",
   exclusive: "Exclusive",
 };
 
-const isActive = (data: UserData) =>
-  data.subscriptionStatus === "active" &&
-  data.subscriptionTier !== "none";
+function getAccessState(sub: Subscription | null): {
+  hasAccess: boolean;
+  isTrial: boolean;
+  isExclusive: boolean;
+  trialExpiresAt: number | null;
+} {
+  if (!sub) return { hasAccess: false, isTrial: false, isExclusive: false, trialExpiresAt: null };
+
+  const isTrial = sub.status === "trial" && sub.trialExpiresAt != null && Date.now() < sub.trialExpiresAt;
+  const isActive = sub.status === "active";
+  const hasAccess = isActive || isTrial;
+  const isExclusive = isActive && sub.tier === "exclusive";
+
+  return { hasAccess, isTrial, isExclusive, trialExpiresAt: isTrial ? sub.trialExpiresAt : null };
+}
+
+function formatTrialExpiry(expiresAt: number): string {
+  const diff = expiresAt - Date.now();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (hours > 0) return `${hours}h ${minutes}m remaining`;
+  return `${minutes}m remaining`;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { openPortal, loading: portalLoading, error: portalError } = useCheckout();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
         router.push("/signin");
         return;
       }
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (snap.exists()) setUserData(snap.data() as UserData);
-      setLoading(false);
+
+      // Use onSnapshot so the profile reacts immediately when the webhook
+      // writes updated subscription data after checkout.
+      const unsubDoc = onSnapshot(doc(db, "users", user.uid), (snap) => {
+        if (snap.exists()) setUserData(snap.data() as UserData);
+        setLoading(false);
+      });
+
+      return () => unsubDoc();
     });
-    return () => unsub();
+
+    return () => unsubAuth();
   }, [router]);
 
   if (loading) {
@@ -58,9 +93,10 @@ export default function ProfilePage() {
 
   if (!userData) return null;
 
-  const subscribed = isActive(userData);
-  const tier = userData.subscriptionTier;
-  const hasExclusive = tier === "exclusive";
+  const sub = userData.subscription ?? null;
+  const { hasAccess, isTrial, isExclusive, trialExpiresAt } = getAccessState(sub);
+  const tier = sub?.tier ?? "free";
+
   const memberSince = userData.createdAt?.toDate().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -100,18 +136,25 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-lg font-light tracking-wide">
-                {TIER_LABELS[tier]}
+                {isTrial ? "Standard — Trial Access" : TIER_LABELS[tier]}
               </p>
-              {memberSince && (
+              {isTrial && trialExpiresAt && (
+                <p className="text-xs text-[#c8a97e]/50 mt-1 tracking-wider">
+                  {formatTrialExpiry(trialExpiresAt)}
+                </p>
+              )}
+              {!isTrial && memberSince && (
                 <p className="text-xs text-[#e8e0d5]/30 mt-1 tracking-wider">Member since {memberSince}</p>
               )}
             </div>
             <span className={`text-xs tracking-[0.2em] uppercase px-3 py-1 border ${
-              subscribed
-                ? "border-[#c8a97e]/40 text-[#c8a97e]"
+              hasAccess
+                ? isTrial
+                  ? "border-[#c8a97e]/25 text-[#c8a97e]/70"
+                  : "border-[#c8a97e]/40 text-[#c8a97e]"
                 : "border-[#e8e0d5]/10 text-[#e8e0d5]/30"
             }`}>
-              {subscribed ? "Active" : "Inactive"}
+              {hasAccess ? (isTrial ? "Trial" : "Active") : "Inactive"}
             </span>
           </div>
         </div>
@@ -121,8 +164,7 @@ export default function ProfilePage() {
           <p className="text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase mb-6">Browse</p>
           <div className="space-y-2">
 
-            {/* Always available */}
-            {!subscribed && (
+            {!hasAccess && (
               <NavTile
                 label="Free Preview"
                 description="A rotating selection, refreshed every 24 hours"
@@ -131,37 +173,34 @@ export default function ProfilePage() {
               />
             )}
 
-            {/* Standard + above */}
             <NavTile
               label="Video Feed"
               description="The full curated library"
               onClick={() => router.push("/videos")}
-              available={subscribed}
+              available={hasAccess}
             />
 
-            {/* Exclusive only */}
             <NavTile
               label="Collections"
               description="Hand-selected thematic series"
               onClick={() => router.push("/feed/curated")}
-              available={hasExclusive}
+              available={isExclusive}
               exclusive
             />
 
             <NavTile
-              label={`Newest`}
+              label="Newest"
               description="First access to everything recent"
               onClick={() => router.push("/videos/new")}
-              available={hasExclusive}
+              available={isExclusive}
               exclusive
             />
 
-            {/* Favorites — subscribed only */}
             <NavTile
               label="Favorites"
               description="Videos you've saved"
               onClick={() => router.push("/favorites")}
-              available={subscribed}
+              available={hasAccess}
             />
           </div>
         </div>
@@ -172,7 +211,7 @@ export default function ProfilePage() {
         </div>
 
         {/* CTA or Manage */}
-        {!subscribed ? (
+        {!hasAccess ? (
           <div className="mb-12">
             <p className="text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase mb-4">Access</p>
             <p className="text-sm text-[#e8e0d5]/40 mb-5 leading-relaxed">
@@ -188,15 +227,28 @@ export default function ProfilePage() {
         ) : (
           <div className="mb-12">
             <p className="text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase mb-4">Subscription</p>
-            <button
-              onClick={() => {
-                // TODO: redirect to Stripe customer portal URL
-                console.warn("Stripe portal not yet configured");
-              }}
-              className="w-full py-3 border border-[#e8e0d5]/10 text-[#e8e0d5]/40 text-sm tracking-[0.2em] uppercase hover:border-[#e8e0d5]/20 hover:text-[#e8e0d5]/60 transition-colors duration-300"
-            >
-              Manage Subscription
-            </button>
+            {isTrial ? (
+              // Trial users can't manage via portal — offer upgrade instead
+              <button
+                onClick={() => router.push("/subscribe")}
+                className="w-full py-3 border border-[#c8a97e]/30 text-[#c8a97e]/70 text-sm tracking-[0.2em] uppercase hover:border-[#c8a97e]/50 hover:text-[#c8a97e] transition-colors duration-300"
+              >
+                Upgrade to Full Access
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={openPortal}
+                  disabled={portalLoading}
+                  className="w-full py-3 border border-[#e8e0d5]/10 text-[#e8e0d5]/40 text-sm tracking-[0.2em] uppercase hover:border-[#e8e0d5]/20 hover:text-[#e8e0d5]/60 transition-colors duration-300 disabled:opacity-30"
+                >
+                  {portalLoading ? "Opening…" : "Manage Subscription"}
+                </button>
+                {portalError && (
+                  <p className="text-xs text-red-400/60 mt-2 tracking-wide">{portalError}</p>
+                )}
+              </>
+            )}
           </div>
         )}
 

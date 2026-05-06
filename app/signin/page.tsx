@@ -87,8 +87,14 @@ export default function SignInPage() {
           tosAcceptedAt: new Date(),
           tosVersion: currentVersion,
           ...(isNewUser && {
-            subscriptionStatus: "inactive",
-            subscriptionTier: "none",
+          subscription: {
+            tier: "free",
+            status: null,
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+            trialExpiresAt: null,
+            updatedAt: null,
+          },
             createdAt: new Date(),
           }),
         },
