@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
 import VideoCard from "@/components/videos/VideoCard";
 import "@/app/styles/videos.css";
 
@@ -15,23 +17,9 @@ interface Video {
   createdAt: string | null;
 }
 
-// ─── Token helpers ────────────────────────────────────────────────────────────
+// ─── Upsell card ──────────────────────────────────────────────────────────────
 
-const TOKEN_KEY = "mh_preview_token";
-
-function getOrCreateToken(): string {
-  if (typeof window === "undefined") return "";
-  let token = localStorage.getItem(TOKEN_KEY);
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-  return token;
-}
-
-// ─── Upsell overlay (shown between every Nth video) ──────────────────────────
-
-const UPSELL_INTERVAL = 5; // inject after every 5th video
+const UPSELL_INTERVAL = 3;
 
 function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
   const router = useRouter();
@@ -46,13 +34,11 @@ function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
         justifyContent: "center",
         background: "#080808",
         border: "0.5px solid #1a1a1a",
-        gap: "0",
         position: "relative",
         padding: "3rem 2rem",
         textAlign: "center",
       }}
     >
-      {/* Corner brackets */}
       {(["tl", "tr", "bl", "br"] as const).map((c) => (
         <div
           key={c}
@@ -99,14 +85,7 @@ function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
         Unlock the Full Haven
       </h2>
 
-      <div
-        style={{
-          width: 32,
-          height: "0.5px",
-          background: "#9a7c4a",
-          margin: "1.25rem auto",
-        }}
-      />
+      <div style={{ width: 32, height: "0.5px", background: "#9a7c4a", margin: "1.25rem auto" }} />
 
       <p
         style={{
@@ -126,7 +105,7 @@ function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", width: "100%", maxWidth: 260 }}>
         <button
-          onClick={() => router.push("/signup")}
+          onClick={() => router.push("/subscribe")}
           style={{
             fontFamily: "'Josefin Sans', sans-serif",
             fontWeight: 300,
@@ -141,7 +120,7 @@ function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
             width: "100%",
           }}
         >
-          Join Now
+          Subscribe Now
         </button>
         <button
           onClick={onDismiss}
@@ -166,7 +145,7 @@ function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
-// ─── Preview feed component ───────────────────────────────────────────────────
+// ─── Feed ─────────────────────────────────────────────────────────────────────
 
 type FeedItem = { type: "video"; video: Video } | { type: "upsell"; key: string };
 
@@ -226,12 +205,10 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, feedItems.length]);
 
-  // Countdown to refresh
   const [timeLeft, setTimeLeft] = useState(() => Math.max(0, expiresAt - Date.now()));
   useEffect(() => {
     const interval = setInterval(() => {
-      const remaining = Math.max(0, expiresAt - Date.now());
-      setTimeLeft(remaining);
+      setTimeLeft(Math.max(0, expiresAt - Date.now()));
     }, 60_000);
     return () => clearInterval(interval);
   }, [expiresAt]);
@@ -304,7 +281,7 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
             Preview refreshes in {hoursLeft}h
           </span>
           <button
-            onClick={() => router.push("/signup")}
+            onClick={() => router.push("/subscribe")}
             style={{
               fontFamily: "'Josefin Sans', sans-serif",
               fontWeight: 300,
@@ -318,7 +295,7 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
               cursor: "pointer",
             }}
           >
-            Join
+            Subscribe
           </button>
         </div>
       </div>
@@ -326,7 +303,7 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
       <div
         className="feed-list"
         ref={feedListRef}
-        style={{ paddingTop: "44px" }} // offset for banner
+        style={{ paddingTop: "44px" }}
       >
         {feedItems.map((item, i) => (
           <div
@@ -364,26 +341,40 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PreviewPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [expiresAt, setExpiresAt] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const token = getOrCreateToken();
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (!u) {
+        router.replace("/signin");
+        return;
+      }
 
-    fetch(`/api/videos?feed=preview&token=${encodeURIComponent(token)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("fetch failed");
-        return res.json();
+      setUser(u);
+      const token = await u.getIdToken();
+
+      fetch("/api/videos?feed=preview", {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((data) => {
-        setVideos(data.videos);
-        setExpiresAt(data.expiresAt);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+        .then((res) => {
+          if (!res.ok) throw new Error("fetch failed");
+          return res.json();
+        })
+        .then((data) => {
+          setVideos(data.videos);
+          setExpiresAt(data.expiresAt);
+        })
+        .catch(() => setError(true))
+        .finally(() => setLoading(false));
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   if (loading) {
     return (
@@ -392,6 +383,8 @@ export default function PreviewPage() {
       </div>
     );
   }
+
+  if (!user) return null;
 
   if (error || videos.length === 0) {
     return (
