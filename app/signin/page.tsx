@@ -346,7 +346,7 @@ await setDoc(
         />
       </div>
 
-      {/* Nav */}
+      {/* Nav 
       <nav
         style={{
           position: "relative",
@@ -387,6 +387,7 @@ await setDoc(
           No account? Join →
         </Link>
       </nav>
+      */}
 
       {/* Main content — centered */}
       <div
