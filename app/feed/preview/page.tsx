@@ -19,7 +19,7 @@ interface Video {
 
 // ─── Upsell card ──────────────────────────────────────────────────────────────
 
-const UPSELL_INTERVAL = 3;
+const UPSELL_INTERVAL = 2;
 
 function UpsellCard({ onDismiss }: { onDismiss: () => void }) {
   const router = useRouter();
