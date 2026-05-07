@@ -210,7 +210,7 @@ export default function ProfilePage() {
           <div className="flex-1 h-px bg-[#e8e0d5]/5" />
         </div>
 
-        {/* CTA or Manage */}
+        {/* CTA or Manage 
         {!hasAccess ? (
           <div className="mb-12">
             <p className="text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase mb-4">Access</p>
@@ -251,6 +251,7 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+        */}
 
         {/* Sign out */}
         <button
