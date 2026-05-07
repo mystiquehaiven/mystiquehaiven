@@ -175,7 +175,7 @@ export default function Home() {
         {/* CTAs */}
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
           <Link
-            href="/signup"
+            href="/signin"
             style={{
               fontFamily: "'Josefin Sans', sans-serif",
               fontWeight: 300,
