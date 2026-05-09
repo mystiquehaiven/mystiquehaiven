@@ -7,12 +7,21 @@ import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser)
+      if (firebaseUser) {
+        const token = await firebaseUser.getIdTokenResult()
+        setIsAdmin(token.claims.role === 'admin')
+      } else {
+        setIsAdmin(false)
+      }
+    })
     return unsubscribe
   }, [])
 
@@ -61,6 +70,19 @@ export default function Navbar() {
           >
             Sign In
           </Link>
+        )}
+
+        {user && isAdmin && (
+          <>
+            <div className="mx-5 h-px bg-[#e8e0d5]/10" />
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="py-3 px-5 text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase hover:text-[#c8a97e] transition-colors duration-300"
+            >
+              Admin
+            </Link>
+          </>
         )}
 
         {user && (

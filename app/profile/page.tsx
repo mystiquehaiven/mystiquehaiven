@@ -183,7 +183,7 @@ export default function ProfilePage() {
             <NavTile
               label="Collections"
               description="Hand-selected thematic series"
-              onClick={() => router.push("/feed/curated")}
+              onClick={() => router.push("/collections")}
               available={isExclusive}
               exclusive
             />
