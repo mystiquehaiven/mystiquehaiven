@@ -23,6 +23,7 @@ const tiers = [
   {
     name: "Two Day One-Off",
     price: "$0.99",
+    oneOff: true,
     description: "Temporary Entry into the haven",
     features: ["Standard gallery access"],
     accent: "#2a2a2a",
@@ -421,17 +422,19 @@ export default function Home() {
                   marginBottom: "2rem",
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "2.8rem",
-                    fontWeight: 300,
-                    color: tier.textAccent,
-                    lineHeight: 1,
-                  }}
-                >
-                  {tier.price}
-                </span>
+{!tier.oneOff && (
+  <span
+    style={{
+      fontFamily: "'Josefin Sans', sans-serif",
+      fontSize: "0.55rem",
+      letterSpacing: "0.2em",
+      color: "#2a2a2a",
+      textTransform: "uppercase",
+    }}
+  >
+    / month
+  </span>
+)}
                 <span
                   style={{
                     fontFamily: "'Josefin Sans', sans-serif",
