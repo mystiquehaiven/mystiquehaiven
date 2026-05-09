@@ -441,7 +441,7 @@ export default function Home() {
       fontFamily: "'Josefin Sans', sans-serif",
       fontSize: "0.55rem",
       letterSpacing: "0.2em",
-      color: "#2a2a2a",
+      color: "#bebbbb",
       textTransform: "uppercase",
     }}
   >
