@@ -32,6 +32,7 @@ const tiers = [
   {
     name: "Standard",
     price: "$14.99",
+    oneOff: false,
     description: "The full experience",
     features: ["Standard gallery access"],
     accent: "#9a7c4a",
@@ -40,6 +41,7 @@ const tiers = [
   },
   {
     name: "Exclusive",
+    oneOff: false,
     price: "$19.99",
     description: "The inner sanctum",
     features: ["Everything in Standard", "Exclusive New Content", "Access to Collections not availalble in Standard"],
@@ -422,6 +424,8 @@ export default function Home() {
                   marginBottom: "2rem",
                 }}
               >
+
+                {!tier.oneOff && (
                 <span
                   style={{
                     fontFamily: "'Cormorant Garamond', serif",
@@ -433,6 +437,7 @@ export default function Home() {
                 >
                   {tier.price}
                 </span>
+                )}
                 <span
                   style={{
                     fontFamily: "'Josefin Sans', sans-serif",
