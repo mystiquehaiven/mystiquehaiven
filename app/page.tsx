@@ -490,7 +490,7 @@ export default function Home() {
               </ul>
 
               <Link
-                href="/signup"
+                href="/subscribe"
                 style={{
                   fontFamily: "'Josefin Sans', sans-serif",
                   fontWeight: 300,
