@@ -17,7 +17,7 @@ export default function Navbar() {
       setUser(firebaseUser)
       if (firebaseUser) {
         const token = await firebaseUser.getIdTokenResult()
-        setIsAdmin(token.claims.role === 'admin')
+        setIsAdmin(!!token.claims.admin)
       } else {
         setIsAdmin(false)
       }
