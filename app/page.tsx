@@ -59,8 +59,7 @@ export default function Home() {
         overflowX: "hidden",
       }}
     >
-      {/* NAV */}
-      <HomeNav />
+
 
       {/* HERO */}
       <section
