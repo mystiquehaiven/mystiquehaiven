@@ -312,18 +312,21 @@ function PreviewFeed({ videos, expiresAt }: { videos: Video[]; expiresAt: number
             className="feed-item"
           >
             {item.type === "video" ? (
-              <VideoCard
-                videoId={item.video.id}
-                playbackUrl={item.video.playbackUrl}
-                thumbnailUrl={item.video.thumbnailUrl}
-                tags={item.video.tags}
-                isActive={i === activeIndex}
-                isNear={Math.abs(i - activeIndex) <= 1}
-                isMuted={isMuted}
-                isAdmin={false}
-                onDelete={() => {}}
-                onTagsUpdate={() => {}}
-              />
+<VideoCard
+  videoId={item.video.id}
+  playbackUrl={item.video.playbackUrl}
+  thumbnailUrl={item.video.thumbnailUrl}
+  tags={item.video.tags}
+  isActive={i === activeIndex}
+  isNear={Math.abs(i - activeIndex) <= 1}
+  isMuted={isMuted}
+  onMuteToggle={() => setIsMuted((m) => !m)}
+  onOpenFilter={() => {}}
+  hasActiveFilters={false}
+  isAdmin={false}
+  onDelete={() => {}}
+  onTagsUpdate={() => {}}
+/>
             ) : (
               <UpsellCard
                 onDismiss={() =>
