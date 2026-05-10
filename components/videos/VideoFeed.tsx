@@ -32,18 +32,21 @@ function shuffleVideos<T>(arr: T[]): T[] {
 }
 
 function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMode): Video[] {
-  const filtered = selectedTags.length > 0
-    ? videos.filter((v) => v.tags.some((t) => selectedTags.includes(t)))
-    : videos;
+  const filtered =
+    selectedTags.length > 0
+      ? videos.filter((v) => v.tags.some((t) => selectedTags.includes(t)))
+      : videos;
 
   if (sortMode === "newest") {
-    return [...filtered].sort((a, b) =>
-      new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
   }
   if (sortMode === "oldest") {
-    return [...filtered].sort((a, b) =>
-      new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
     );
   }
   return shuffleVideos(filtered);
@@ -53,20 +56,33 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   const searchParams = useSearchParams();
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortMode, setSortMode] = useState<SortMode>("random");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const feedListRef = useRef<HTMLDivElement>(null);
   const didScrollToTarget = useRef(false);
 
-  // Resolve admin status from Firebase token claims
+  // Resolve admin status and subscription from Firebase token claims
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) { setIsAdmin(false); return; }
+      if (!user) {
+        setIsAdmin(false);
+        setIsSubscribed(false);
+        setIsAuthenticated(false);
+        return;
+      }
+      setIsAuthenticated(true);
       const token = await user.getIdTokenResult();
       setIsAdmin(token.claims.admin === true);
+      const sub = token.claims.subscription as
+        | { status?: string; tier?: string }
+        | undefined;
+      setIsSubscribed(sub?.status === "active");
     });
     return unsubscribe;
   }, []);
@@ -76,7 +92,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   }, []);
 
   const handleTagsUpdate = useCallback((videoId: string, tags: string[]) => {
-    setVideos((prev) => prev.map((v) => v.id === videoId ? { ...v, tags } : v));
+    setVideos((prev) => prev.map((v) => (v.id === videoId ? { ...v, tags } : v)));
   }, []);
 
   const displayVideos = useMemo(
@@ -129,38 +145,24 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, displayVideos.length]);
 
-  const handleApplyTags = useCallback((tags: string[], sort: SortMode) => {
-    setSelectedTags(tags);
-    setSortMode(sort);
-    setActiveIndex(0);
-    if (feedListRef.current) {
-      feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, []);
+  const handleApplyTags = useCallback(
+    (tags: string[], sort: SortMode) => {
+      setSelectedTags(tags);
+      setSortMode(sort);
+      setActiveIndex(0);
+      if (feedListRef.current) {
+        feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+    []
+  );
 
   return (
     <div className="feed-container">
-      <button
-        className="mute-fab"
-        onClick={() => setIsMuted((m) => !m)}
-        aria-label={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <line x1="23" y1="9" x2="17" y2="15" />
-            <line x1="17" y1="9" x2="23" y2="15" />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-          </svg>
-        )}
-      </button>
-
+      {/* TagFilterModal is kept here but triggered from VideoCard via onOpenFilter */}
       <TagFilterModal
+        isOpen={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
         selectedTags={selectedTags}
         sortMode={sortMode}
         tagCounts={tagCounts}
@@ -175,7 +177,9 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
         {displayVideos.map((video, i) => (
           <div
             key={video.id}
-            ref={(el) => { cardRefs.current[i] = el; }}
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
             className="feed-item"
           >
             <VideoCard
@@ -186,7 +190,12 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
               isActive={i === activeIndex}
               isNear={Math.abs(i - activeIndex) <= 1}
               isMuted={isMuted}
+              onMuteToggle={() => setIsMuted((m) => !m)}
+              onOpenFilter={() => setFilterModalOpen(true)}
+              hasActiveFilters={selectedTags.length > 0}
               isAdmin={isAdmin}
+              isSubscribed={isSubscribed}
+              isAuthenticated={isAuthenticated}
               onDelete={handleDelete}
               onTagsUpdate={handleTagsUpdate}
             />

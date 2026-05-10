@@ -297,199 +297,61 @@
 
 /* ─── Filter Modal ────────────────────────────────────────────── */
 
-.filter-section-label {
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-  padding: 0.5rem 0 0.35rem;
-}
 
-.filter-sort-row {
-  display: flex;
-  gap: 0.5rem;
-  padding-bottom: 0.75rem;
-}
-
-.filter-sort-btn {
-  flex: 1;
-  padding: 0.4rem 0;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.filter-sort-btn.selected {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.filter-modal {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 70;
-  max-height: 72svh;
-  background: #0e0e0e;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px 16px 0 0;
+.fab-column {
+  position: absolute;
+  right: 14px;
+  bottom: 80px;          /* lift above any bottom nav/safe area */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-.filter-modal-header {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
+  gap: 10px;
+  z-index: 10;
 }
-
-.filter-modal-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.filter-modal-close {
+ 
+.fab {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  color: rgba(255, 255, 255, 0.4);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 169, 126, 0.35);   /* gold border, your --accent */
+  background: rgba(10, 8, 6, 0.65);              /* near-black, your bg */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  transition: color 0.15s;
-}
-
-.filter-modal-close:hover {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.filter-tags-grid {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 16px 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-content: flex-start;
-}
-
-.filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.filter-tag:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.filter-tag.selected {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-}
-
-.filter-tag-count {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.filter-tag.selected .filter-tag-count {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.filter-modal-footer {
-  display: flex;
-  gap: 10px;
-  padding: 14px 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.12s ease;
   flex-shrink: 0;
 }
-
-.filter-clear-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+ 
+.fab:hover {
+  background: rgba(200, 169, 126, 0.18);
+  border-color: rgba(200, 169, 126, 0.7);
+  color: #c8a97e;
+  transform: scale(1.08);
 }
-
-.filter-clear-btn:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.7);
+ 
+.fab:active {
+  transform: scale(0.94);
 }
-
-.filter-clear-btn:disabled {
-  opacity: 0.3;
+ 
+.fab:disabled {
+  opacity: 0.5;
   cursor: default;
+  transform: none;
 }
-
-.filter-apply-btn {
-  flex: 2;
-  padding: 12px;
-  border-radius: 6px;
-  border: none;
-  background: #fff;
-  color: #000;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.filter-apply-btn:hover {
-  background: rgba(255, 255, 255, 0.88);
+ 
+/* Active/toggled state — used for favorite (filled) and filter (has selection) */
+.fab--active {
+  background: rgba(200, 169, 126, 0.22);
+  border-color: #c8a97e;
+  color: #c8a97e;
 }
 
 /* ─── Empty / Loading ─────────────────────────────────────────── */

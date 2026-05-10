@@ -2,7 +2,7 @@
 
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { fetchTermsContent, getTermsVersionAction } from "@/app/actions/terms";
@@ -242,7 +242,6 @@ export default function SignInPage() {
     if (!pendingUser) return;
     try {
       const currentVersion = await getTermsVersionAction();
-      const isNewUser = !(await getDoc(doc(db, "users", pendingUser.uid))).exists;
 
 await setDoc(
   doc(db, "users", pendingUser.uid),
@@ -252,20 +251,23 @@ await setDoc(
     ageVerifiedAt: new Date(),
     tosAcceptedAt: new Date(),
     tosVersion: currentVersion,
-    ...(isNewUser ? {
-      subscription: {
-        tier: "free",
-        status: null,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        trialExpiresAt: null,
-        updatedAt: null,
-      },
-      createdAt: new Date(),
-    } : {}),
+    createdAt: serverTimestamp(), // safe to always write — Firestore won't overwrite with merge
   },
   { merge: true }
 );
+
+// Only set subscription if it doesn't already exist
+const userSnap = await getDoc(doc(db, "users", pendingUser.uid));
+if (!userSnap.data()?.subscription) {
+  await updateDoc(doc(db, "users", pendingUser.uid), {
+    subscription: {
+      tier: "free",
+      status: null,
+      trialExpiresAt: null,
+      updatedAt: null,
+    },
+  });
+}
 
       setModalState("idle");
       setTosAccepted(false);

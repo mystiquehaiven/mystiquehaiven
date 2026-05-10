@@ -1,8 +1,15 @@
 "use client";
 
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { PREDEFINED_TAGS } from "../../components/admin/UploadForm";
 import { useEffect, useRef, useCallback, useState } from "react";
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import Hls from "hls.js";
 
 interface VideoCardProps {
@@ -13,7 +20,12 @@ interface VideoCardProps {
   isActive: boolean;
   isNear: boolean;
   isMuted: boolean;
+  onMuteToggle: () => void;
+  onOpenFilter: () => void;
+  hasActiveFilters: boolean;
   isAdmin?: boolean;
+  isSubscribed?: boolean;
+  isAuthenticated?: boolean;
   onDelete?: (videoId: string) => void;
   onTagsUpdate?: (videoId: string, tags: string[]) => void;
 }
@@ -34,7 +46,12 @@ export default function VideoCard({
   isActive,
   isNear,
   isMuted,
+  onMuteToggle,
+  onOpenFilter,
+  hasActiveFilters,
   isAdmin = false,
+  isSubscribed = false,
+  isAuthenticated = false,
   onDelete,
   onTagsUpdate,
 }: VideoCardProps) {
@@ -52,6 +69,11 @@ export default function VideoCard({
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Favorites state
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavLoading, setIsFavLoading] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
+
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
@@ -60,6 +82,18 @@ export default function VideoCard({
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  // Load favorite state from Firestore when active
+  useEffect(() => {
+    if (!isActive || !isAuthenticated || !isSubscribed) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const favRef = doc(db, "users", user.uid, "favorites", videoId);
+    getDoc(favRef).then((snap) => {
+      setIsFavorited(snap.exists());
+    }).catch(console.error);
+  }, [isActive, isAuthenticated, isSubscribed, videoId]);
 
   const getToken = useCallback(async () => {
     const user = auth.currentUser;
@@ -99,6 +133,43 @@ export default function VideoCard({
     }
     setTimeout(() => setShareFeedback("idle"), 2000);
   }, [videoId]);
+
+  const handleFavorite = useCallback(async () => {
+    // Unauthenticated: hide button entirely (handled in render), but guard here too
+    if (!isAuthenticated) return;
+
+    // Not subscribed: show upsell
+    if (!isSubscribed) {
+      setShowUpsell(true);
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user || isFavLoading) return;
+
+    // Optimistic toggle
+    const next = !isFavorited;
+    setIsFavorited(next);
+    setIsFavLoading(true);
+
+    try {
+      const favRef = doc(db, "users", user.uid, "favorites", videoId);
+      if (next) {
+        await setDoc(favRef, {
+          videoId,
+          savedAt: serverTimestamp(),
+        });
+      } else {
+        await deleteDoc(favRef);
+      }
+    } catch (err) {
+      console.error("Favorite toggle failed:", err);
+      // Revert on failure
+      setIsFavorited(!next);
+    } finally {
+      setIsFavLoading(false);
+    }
+  }, [isAuthenticated, isSubscribed, isFavorited, isFavLoading, videoId]);
 
   const toggleTag = useCallback((tag: string) => {
     setTags((prev) =>
@@ -193,10 +264,14 @@ export default function VideoCard({
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = playbackUrl;
       video.load();
-      video.addEventListener("canplay", () => {
-        readyRef.current = true;
-        syncPlayback(video);
-      }, { once: true });
+      video.addEventListener(
+        "canplay",
+        () => {
+          readyRef.current = true;
+          syncPlayback(video);
+        },
+        { once: true }
+      );
     }
 
     return () => {
@@ -231,9 +306,46 @@ export default function VideoCard({
       />
 
       {isActive && (
-        <>
+        <div className="fab-column">
+
+          {/* Mute */}
           <button
-            className="fullscreen-fab"
+            className="fab"
+            onClick={onMuteToggle}
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+            )}
+          </button>
+
+          {/* Favorite — hidden for unauthenticated users */}
+          {isAuthenticated && (
+            <button
+              className={`fab${isFavorited ? " fab--active" : ""}`}
+              onClick={handleFavorite}
+              disabled={isFavLoading}
+              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={isFavorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+          )}
+
+          {/* Fullscreen */}
+          <button
+            className="fab"
             onClick={handleFullscreen}
             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           >
@@ -254,27 +366,42 @@ export default function VideoCard({
             )}
           </button>
 
+          {/* Share */}
           <button
-            className="share-fab"
+            className="fab"
             onClick={handleShare}
             aria-label="Share video"
           >
-            {shareFeedback === "copied" ? (
+            {shareFeedback === "copied" || shareFeedback === "shared" ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                 <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
               </svg>
             )}
           </button>
 
+          {/* Filter */}
+          <button
+            className={`fab${hasActiveFilters ? " fab--active" : ""}`}
+            onClick={onOpenFilter}
+            aria-label="Filter videos"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+          </button>
+
+          {/* Admin */}
           {isAdmin && (
             <button
-              className="admin-fab"
+              className="fab"
               onClick={() => setAdminPanelOpen((o) => !o)}
               aria-label="Admin options"
             >
@@ -284,9 +411,10 @@ export default function VideoCard({
               </svg>
             </button>
           )}
-        </>
+        </div>
       )}
 
+      {/* Admin panel */}
       {isAdmin && adminPanelOpen && (
         <div className="admin-panel" onClick={(e) => e.stopPropagation()}>
           <div className="admin-panel-header">
@@ -316,6 +444,39 @@ export default function VideoCard({
             <button onClick={handleDelete} disabled={isDeleting} className="admin-delete-btn">
               {isDeleting ? "Deleting…" : "Delete Video"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Upsell modal for non-subscribed authenticated users */}
+      {showUpsell && (
+        <div
+          className="upsell-overlay"
+          onClick={() => setShowUpsell(false)}
+        >
+          <div
+            className="upsell-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="upsell-close"
+              onClick={() => setShowUpsell(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <div className="upsell-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </div>
+            <h3 className="upsell-title">Save Your Favorites</h3>
+            <p className="upsell-body">
+              Subscribe to bookmark videos and revisit them anytime from your profile.
+            </p>
+            <a href="/subscribe" className="upsell-cta">
+              View Plans
+            </a>
           </div>
         </div>
       )}
