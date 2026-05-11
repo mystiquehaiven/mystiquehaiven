@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
@@ -79,9 +81,11 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
       setIsAuthenticated(true);
       const token = await user.getIdTokenResult();
       setIsAdmin(token.claims.admin === true);
-      const sub = token.claims.subscription as
-        | { status?: string; tier?: string }
-        | undefined;
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+
+      const sub = userSnap.data()?.subscription as { status?: string; tier?: string } | undefined;
+
       setIsSubscribed(sub?.status === "active");
     });
     return unsubscribe;
