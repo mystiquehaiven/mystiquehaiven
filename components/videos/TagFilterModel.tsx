@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PREDEFINED_TAGS } from "@/lib/tags";
+import "../../app/styles/videos.css"
 
 type SortMode = "random" | "newest" | "oldest";
 
