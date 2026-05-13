@@ -110,10 +110,11 @@
   /* match whatever styles fullscreen-fab has */
 }
 
-.fab--fullscreen {
-  position: absolute;
-  bottom: 80px;
-  left: 14px;
+.fab-fullscreen {
+  position: fixed;
+  bottom: 24px;
+  right: 16px;
+  z-index: 100;
 }
 
 .filter-badge {
