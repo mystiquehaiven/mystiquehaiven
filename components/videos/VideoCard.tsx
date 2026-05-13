@@ -394,6 +394,7 @@ export default function VideoCard({
         </div>
 
                     {/* Fullscreen */}
+          <div className="fab-corner fab-corner--top-left">
           <button
             className="fab"
             onClick={handleFullscreen}
@@ -415,7 +416,7 @@ export default function VideoCard({
               </svg>
             )}
           </button>
-
+          </div>
         </>
       )}
 

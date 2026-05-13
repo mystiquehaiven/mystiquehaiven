@@ -117,6 +117,15 @@
   z-index: 100;
 }
 
+.fab-corner--top-left {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .filter-badge {
   position: absolute;
   top: -4px;
