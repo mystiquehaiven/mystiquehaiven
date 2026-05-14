@@ -1,6 +1,10 @@
 "use client";
 
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithPopup, 
+         GoogleAuthProvider, 
+         signInWithEmailAndPassword, 
+         createUserWithEmailAndPassword 
+        } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -187,6 +191,11 @@ export default function SignInPage() {
   const [termsHtml, setTermsHtml] = useState("");
   const [tosAccepted, setTosAccepted] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     if (modalState === "tos") {
@@ -226,6 +235,62 @@ export default function SignInPage() {
       setSigningIn(false);
     }
   };
+
+  const handleEmailSignIn = async () => {
+  if (!email || !password) {
+    setAuthError("Email and password required");
+    return;
+  }
+  setSigningIn(true);
+  setAuthError("");
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+    
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      setPendingUser({ uid: user.uid, email: user.email });
+      setModalState("age-verify");
+      return;
+    }
+
+    const userTosVersion = userSnap.data()?.tosVersion;
+    const currentVersion = await getTermsVersionAction();
+
+    if (userTosVersion !== currentVersion) {
+      setPendingUser({ uid: user.uid, email: user.email });
+      setModalState("tos");
+      return;
+    }
+
+    await routeUser(user);
+  } catch (error: any) {
+    setAuthError(error.message);
+  } finally {
+    setSigningIn(false);
+  }
+};
+
+const handleEmailSignUp = async () => {
+  if (!email || !password) {
+    setAuthError("Email and password required");
+    return;
+  }
+  setSigningIn(true);
+  setAuthError("");
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+    setPendingUser({ uid: user.uid, email: user.email });
+    setModalState("age-verify");
+  } catch (error: any) {
+    setAuthError(error.message);
+  } finally {
+    setSigningIn(false);
+  }
+};
 
   const handleAgeConfirmed = () => {
     setTosAccepted(false);
@@ -532,44 +597,115 @@ if (!userSnap.data()?.subscription) {
           </button>
 
           {/* Divider */}
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              margin: "1.5rem 0",
-            }}
-          >
-            <div style={{ flex: 1, height: "0.5px", background: color.border }} />
-            <span
-              style={{
-                fontFamily: font.sans,
-                fontSize: "0.5rem",
-                letterSpacing: "0.3em",
-                color: color.textGhost,
-                textTransform: "uppercase",
-              }}
-            >
-              Or
-            </span>
-            <div style={{ flex: 1, height: "0.5px", background: color.border }} />
-          </div>
+{/* Divider */}
+<div
+  style={{
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
+    margin: "1.5rem 0",
+  }}
+>
+  <div style={{ flex: 1, height: "0.5px", background: color.border }} />
+  <span
+    style={{
+      fontFamily: font.sans,
+      fontSize: "0.5rem",
+      letterSpacing: "0.3em",
+      color: color.textGhost,
+      textTransform: "uppercase",
+    }}
+  >
+    Or
+  </span>
+  <div style={{ flex: 1, height: "0.5px", background: color.border }} />
+</div>
 
-          {/* More providers placeholder */}
-          <p
-            style={{
-              fontFamily: font.sans,
-              fontWeight: 200,
-              fontSize: "0.55rem",
-              letterSpacing: "0.25em",
-              color: color.textGhost,
-              textTransform: "uppercase",
-              textAlign: "center",
-            }}
-          >
-            More sign-in options coming soon
-          </p>
+{/* Email/Password toggle */}
+<button
+  onClick={() => {
+    setShowEmailForm(!showEmailForm);
+    setAuthError("");
+    setEmail("");
+    setPassword("");
+  }}
+  style={{
+    fontFamily: font.sans,
+    fontWeight: 200,
+    fontSize: "0.55rem",
+    letterSpacing: "0.25em",
+    color: color.textGhost,
+    textTransform: "uppercase",
+    textAlign: "center",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    marginBottom: "1.5rem",
+  }}
+>
+  {showEmailForm ? "← Back to options" : "Sign in with email"}
+</button>
+
+{/* Email/Password form */}
+{showEmailForm && (
+  <div style={{ width: "100%", marginBottom: "1.5rem" }}>
+    <input
+      type="email"
+      placeholder="Email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      style={{
+        width: "100%",
+        background: color.surface,
+        border: `0.5px solid ${color.borderMid}`,
+        color: color.text,
+        padding: "0.85rem 1rem",
+        fontFamily: font.sans,
+        fontSize: "0.9rem",
+        marginBottom: "0.75rem",
+        boxSizing: "border-box",
+      }}
+    />
+    <input
+      type="password"
+      placeholder="Password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      style={{
+        width: "100%",
+        background: color.surface,
+        border: `0.5px solid ${color.borderMid}`,
+        color: color.text,
+        padding: "0.85rem 1rem",
+        fontFamily: font.sans,
+        fontSize: "0.9rem",
+        marginBottom: "1rem",
+        boxSizing: "border-box",
+      }}
+    />
+    {authError && (
+      <p
+        style={{
+          color: "#d46a6a",
+          fontSize: "0.75rem",
+          marginBottom: "1rem",
+          textAlign: "center",
+        }}
+      >
+        {authError}
+      </p>
+    )}
+    <div style={{ display: "flex", gap: "0.75rem" }}>
+      <GoldButton onClick={handleEmailSignIn} disabled={signingIn}>
+        {signingIn ? "Signing in..." : "Sign In"}
+      </GoldButton>
+      <GoldButton onClick={handleEmailSignUp} disabled={signingIn}>
+        {signingIn ? "Creating..." : "Create Account"}
+      </GoldButton>
+    </div>
+  </div>
+)}
 
           {/* Bottom ornament */}
           <div
