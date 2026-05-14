@@ -98,6 +98,7 @@ if (!isActive && !isTrial) {
 
   // ── Preview feed ────────────────────────────────────────────────────────────
   if (feed === "preview") {
+    
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     const now = Date.now();
 
@@ -137,14 +138,30 @@ if (!isActive && !isTrial) {
     });
   }
 
-  // ── New feed: exclusive tier only ───────────────────────────────────────────
-  if (feed === "new") {
-    const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
-    const tier = userDoc.data()?.subscriptionTier;
-    if (tier !== "exclusive") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+  const sub = userDoc.data()?.subscription as { status?: string; tier?: string; trialExpiresAt?: { toMillis?: () => number } | number | null } | undefined;
+
+  const now = Date.now();
+  const isActive = sub?.status === "active";
+  const rawExpiry = sub?.trialExpiresAt;
+  const expiryMs =
+    rawExpiry != null && typeof rawExpiry === "object" && typeof rawExpiry.toMillis === "function"
+      ? rawExpiry.toMillis()
+      : typeof rawExpiry === "number"
+      ? rawExpiry
+      : null;
+  const isTrial = sub?.status === "trial" && expiryMs != null && expiryMs > now;
+
+  if (!isActive && !isTrial) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // ── New feed: exclusive tier only ───────────────────────────────────────────
+if (feed === "new") {
+  if (sub?.tier !== "exclusive") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+}
 
   // ── General + new feeds ─────────────────────────────────────────────────────
   try {
