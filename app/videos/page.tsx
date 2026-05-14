@@ -47,6 +47,8 @@ useEffect(() => {
         }
       }
       setTagCounts(counts);
+    } else {
+      router.replace("/profile");
     }
 
     setLoading(false);
