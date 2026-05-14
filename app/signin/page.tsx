@@ -633,7 +633,7 @@ if (!userSnap.data()?.subscription) {
   style={{
     fontFamily: font.sans,
     fontWeight: 200,
-    fontSize: "0.55rem",
+    fontSize: "1 rem",
     letterSpacing: "0.25em",
     color: color.textGhost,
     textTransform: "uppercase",
