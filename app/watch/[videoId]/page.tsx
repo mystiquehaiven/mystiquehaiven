@@ -57,26 +57,7 @@ export default function WatchPage() {
     if (authReady && !uid) router.replace("/signin");
   }, [authReady, uid, router]);
 
-  // ── Fetch video doc ───────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!videoId) return;
-    setVideoLoading(true);
-    getDoc(doc(db, "videos", videoId))
-      .then((snap) => {
-        if (!snap.exists()) { setVideoError(true); return; }
-        const d = snap.data();
-        setVideo({
-          playbackUrl: d.playbackUrl,
-          thumbnailUrl: d.thumbnailUrl ?? undefined,
-        });
-      })
-      .catch(() => setVideoError(true))
-      .finally(() => setVideoLoading(false));
-  }, [videoId]);
-
-  // ── Fetch favorite state ──────────────────────────────────────────────────
-
+// ── Fetch video via API ───────────────────────────────────────────────────
 useEffect(() => {
   if (!uid || !videoId) return;
   setVideoLoading(true);
@@ -94,6 +75,14 @@ useEffect(() => {
     } finally {
       setVideoLoading(false);
     }
+  });
+}, [uid, videoId]);
+
+// ── Fetch favorite state ──────────────────────────────────────────────────
+useEffect(() => {
+  if (!uid || !videoId) return;
+  getDoc(doc(db, "users", uid, "favorites", videoId)).then((snap) => {
+    setIsFavorited(snap.exists());
   });
 }, [uid, videoId]);
 
