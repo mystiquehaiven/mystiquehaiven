@@ -28,8 +28,8 @@ const color = {
   goldDim: "#9a7c4a",
   text: "#e8e8e8",
   textMid: "#888",
-  textDim: "#444",
-  textGhost: "#2a2a2a",
+  textDim: "#787878",
+  textGhost: "#c4c4c4",
 };
 
 /* ─── Reusable modal shell ─── */

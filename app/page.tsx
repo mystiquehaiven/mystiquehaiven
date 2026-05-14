@@ -331,7 +331,7 @@ export default function Home() {
             fontWeight: 200,
             fontSize: "0.55rem",
             letterSpacing: "0.45em",
-            color: "#2a2a2a",
+            color: "#808080",
             textTransform: "uppercase",
             whiteSpace: "nowrap",
           }}
@@ -405,7 +405,7 @@ export default function Home() {
                 style={{
                   fontStyle: "italic",
                   fontSize: "0.85rem",
-                  color: "#3a3a3a",
+                  color: "#808080",
                   margin: "0 0 2rem",
                   letterSpacing: "0.04em",
                 }}
