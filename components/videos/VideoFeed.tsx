@@ -61,7 +61,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortMode, setSortMode] = useState<SortMode>("random");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [filterModalOpen, setFilterModalOpen] = useState(false);

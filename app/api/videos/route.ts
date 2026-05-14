@@ -59,6 +59,43 @@ export async function GET(req: NextRequest) {
 
   const feed = req.nextUrl.searchParams.get("feed");
 
+    // ── Single video lookup ─────────────────────────────────────────────────────
+  if (req.nextUrl.searchParams.get("id")) {
+    const videoId = req.nextUrl.searchParams.get("id")!;
+ 
+    const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+    const sub = userDoc.data()?.subscription as { status?: string; tier?: string; trialExpiresAt?: { toMillis?: () => number } | number | null } | undefined;const now = Date.now();
+    const isActive = sub?.status === "active";
+
+    const rawExpiry = sub?.trialExpiresAt;
+    const expiryMs =
+      rawExpiry != null && typeof rawExpiry === "object" && typeof rawExpiry.toMillis === "function"
+        ? rawExpiry.toMillis()
+        : typeof rawExpiry === "number"
+        ? rawExpiry
+        : null;
+    const isTrial = sub?.status === "trial" && expiryMs != null && expiryMs > now;
+
+if (!isActive && !isTrial) {
+  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+}
+ 
+    const videoDoc = await adminDb.collection("videos").doc(videoId).get();
+    if (!videoDoc.exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+ 
+    const v = videoDoc.data()!;
+    return NextResponse.json({
+      id: videoDoc.id,
+      bunnyVideoId: v.bunnyVideoId,
+      playbackUrl: v.playbackUrl,
+      thumbnailUrl: v.thumbnailUrl ?? null,
+      tags: v.tags ?? [],
+      createdAt: v.createdAt?.toDate?.()?.toISOString() ?? null,
+    });
+  }
+
   // ── Preview feed ────────────────────────────────────────────────────────────
   if (feed === "preview") {
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -138,4 +175,9 @@ export async function GET(req: NextRequest) {
     console.error("Failed to fetch videos:", err);
     return NextResponse.json({ error: "Failed to fetch videos" }, { status: 500 });
   }
+
+
+  
+
+
 }
