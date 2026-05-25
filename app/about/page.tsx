@@ -237,41 +237,7 @@ Age verification is mandatory. This is an adults-only platform, and that boundar
 
         <Divider />
 
-        {/* ── ADDITIONAL SECTIONS — paste your other content blocks below ── */}
 
-        <FadeSection delay={100}>
-          <Eyebrow label="[ Section Label ]" />
-          <p
-            style={{
-              fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
-              fontWeight: 300,
-              lineHeight: 1.85,
-              color: "#888",
-              margin: 0,
-            }}
-          >
-            {/* PASTE ADDITIONAL SECTION CONTENT HERE */}
-            Placeholder — replace with your drafted copy.
-          </p>
-        </FadeSection>
-
-        <Divider />
-
-        <FadeSection delay={150}>
-          <Eyebrow label="[ Section Label ]" />
-          <p
-            style={{
-              fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
-              fontWeight: 300,
-              lineHeight: 1.85,
-              color: "#888",
-              margin: 0,
-            }}
-          >
-            {/* PASTE ADDITIONAL SECTION CONTENT HERE */}
-            Placeholder — replace with your drafted copy.
-          </p>
-        </FadeSection>
       </section>
 
       {/* ── CLOSING RULE ── */}
