@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   // Verify this is called by Vercel cron, not a random request
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
