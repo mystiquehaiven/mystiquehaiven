@@ -202,34 +202,34 @@ export default function AboutPage() {
             filler. Just a premium, purposeful experience that respects the one thing you
             
             can't get back — your time.
-
+            <br />
             
             The Actual Value
-
+<br />
 We don't just generate content and throw it up. Every video, every image that makes it onto MYSTIQUE hAIven meets a real standard. High visual fidelity. Coherent composition. Intentional curation. We're selective, which means you don't have to be.
 
 We also maintain a consistent creative vision. All characters are fully synthetic—no real people, no real likenesses—but we do have aesthetic and thematic boundaries. Some content types, some aesthetics, some character types don't fit what we're building. And we think that focused vision is actually better than trying to be everything.
-
+<br />
 
 
 Trust & Safety
-
+<br />
 Every user goes through age verification—this is an adults-only platform. All content is AI-generated with no real people or likenesses involved. Every character depicted is visibly adult. We're intentional about what we create: we strongly avoid any content that could imitate illegal activity. Our guidelines are firm on this, and we build our library accordingly.
-
+<br />
 Inside the Platform
-
+<br />
 No bloated interfaces. No distracting UI designed to funnel you through endless menus. The platform is straightforward and easy to navigate—find what you're looking for, access your tier, done. Clean design that respects your time.
-
+<br />
 ---
-
+<br />
 Our Ethical Foundation
-
+<br />
 We believe synthetic content has a responsibility to be clearly synthetic. All content on MYSTIQUE hAIven is AI-generated with no real people or likenesses involved. Every character depicted is visibly adult.
 
 We're intentional about what we create. We do not generate content that imitates, depicts, or simulates illegal activity. Our content guidelines reflect this commitment: we build a library we can stand behind, and we expect the same integrity from ourselves that we offer you.
-
+<br />
 Age verification is mandatory. This is an adults-only platform, and that boundary matters.
-
+<br />
 *All content is AI-generated. No real people, no real likenesses.*
 
           </p>
