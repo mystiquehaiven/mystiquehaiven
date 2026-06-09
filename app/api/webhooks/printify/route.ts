@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // 2. Only process order payment events
-  if (payload.type !== "order_payment_success") {
+  // 2. Only process order created events
+  if (payload.type !== "order:created") {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
