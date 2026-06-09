@@ -92,8 +92,10 @@ function formatPrice(cents: number): string {
 }
 
 function buildCheckoutUrl(handle: string): string {
-  const slug = process.env.PRINTIFY_POPUP_SLUG;
-  return `https://${slug}.printify.me/products/${handle}`;
+  // Printify provides the full URL in external.handle
+  if (handle.startsWith("http")) return handle;
+  const store = process.env.PRINTIFY_POPUP_SLUG;
+  return `https://${store}.printify.me/product/${handle}`;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
