@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { Resend } from "resend";
 import { createRedemptionCode } from "@/lib/redemptionCodes";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+//const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── HMAC Verification ────────────────────────────────────────────────────────
 
@@ -53,6 +53,7 @@ interface PrintifyOrderPayload {
 // ─── Route Handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const rawBody = await req.text();
   const signature = req.headers.get("x-pfy-signature");
 
