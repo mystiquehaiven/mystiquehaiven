@@ -3,8 +3,6 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { Resend } from "resend";
 import { createRedemptionCode } from "@/lib/redemptionCodes";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ─── HMAC Verification ────────────────────────────────────────────────────────
 
 function verifyPrintifySignature(
@@ -110,6 +108,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 5. Send email via Resend
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     await resend.emails.send({
       from: "MystiqueHaiven <noreply@mystiquehaiven.com>",
