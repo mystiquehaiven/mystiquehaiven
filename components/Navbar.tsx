@@ -82,7 +82,14 @@ export default function Navbar() {
           About
         </Link>
         
-
+        <div className="mx-5 h-px bg-[#e8e0d5]/10" />
+          <Link
+            href="/store"
+            onClick={() => setOpen(false)}
+            className="py-3 px-5 text-xs tracking-[0.3em] text-[#e8e0d5]/60 uppercase hover:text-[#e8e0d5] transition-colors duration-300"
+          >
+            Store
+          </Link>
 
 
         {user && isAdmin && (
