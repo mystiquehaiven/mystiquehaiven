@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword,
   User,
 } from "firebase/auth";
-import { app } from "@/lib/firebase";
+import { app } from "../../lib/firebase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
