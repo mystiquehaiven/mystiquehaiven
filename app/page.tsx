@@ -14,40 +14,7 @@ const pillars = [
     title: "Curated, Not Crowdsourced",
     body: "No user uploads, no noise. Every piece is selected for its aesthetic and craft — quality over volume.",
   },
-  {
-    symbol: "⬡",
-    title: "Tiered Access",
-    body: "From the standard to the exclusive inner sanctum. Deeper access unlocks richer, more experimental content.",
-  },
-];
 
-const tiers = [
-  {
-    name: "Two Day One-Off",
-    price: "$0.99",
-    oneOff: true,
-    description: "Temporary Entry into the haven",
-    features: ["Standard gallery access"],
-    accent: "#2a2a2a",
-    textAccent: "#888",
-  },
-  {
-    name: "Standard",
-    price: "$14.99",
-    description: "The full experience",
-    features: ["Standard gallery access"],
-    accent: "#9a7c4a",
-    textAccent: "#c9a96e",
-    featured: true,
-  },
-  {
-    name: "Exclusive",
-    price: "$19.99",
-    description: "The inner sanctum",
-    features: ["Everything in Standard", "Exclusive New Content", "Access to Collections not availalble in Standard"],
-    accent: "#2a2a2a",
-    textAccent: "#888",
-  },
 ];
 
 const topLinks = [
@@ -67,94 +34,15 @@ export default function Home() {
         overflowX: "hidden",
       }}
     >
-      {/* TOP CATEGORY NAV */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "1.75rem",
-          padding: "1rem 2rem",
-          background: "rgba(8, 8, 8, 0.85)",
-          backdropFilter: "blur(6px)",
-          borderBottom: "0.5px solid #151515",
-        }}
-      >
-        {topLinks.map((link) => (
-          <Link
-            key={link.label}
-            href={link.href}
-            className="navTile"
-            style={{ textDecoration: "none", display: "block" }}
-          >
-            <div
-              style={{
-                position: "relative",
-                width: 92,
-                height: 60,
-                overflow: "hidden",
-                border: "0.5px solid #1e1e1e",
-              }}
-            >
-              <img
-                src={link.image}
-                alt={link.label}
-                className="navTileImg"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                  filter: "grayscale(40%) brightness(0.75)",
-                  transition: "transform 0.35s ease, filter 0.35s ease",
-                }}
-              />
-              <div
-                className="navTileOverlay"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "rgba(0,0,0,0.35)",
-                  transition: "background 0.35s ease",
-                }}
-              >
-                <span
-                  className="navTileLabel"
-                  style={{
-                    fontFamily: "'Josefin Sans', sans-serif",
-                    fontWeight: 300,
-                    fontSize: "0.58rem",
-                    letterSpacing: "0.28em",
-                    textTransform: "uppercase",
-                    color: "#ccc",
-                    transition: "color 0.35s ease",
-                  }}
-                >
-                  {link.label}
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </nav>
-
       <style jsx global>{`
-        .navTile:hover .navTileImg {
-          transform: scale(1.12);
+        .categoryTile:hover .categoryTileImg {
+          transform: scale(1.08);
           filter: grayscale(0%) brightness(0.95);
         }
-        .navTile:hover .navTileOverlay {
-          background: rgba(0, 0, 0, 0.1);
+        .categoryTile:hover .categoryTileOverlay {
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.05) 70%);
         }
-        .navTile:hover .navTileLabel {
+        .categoryTile:hover .categoryTileLabel {
           color: #c9a96e;
         }
       `}</style>
@@ -269,6 +157,79 @@ export default function Home() {
         >
           A sanctuary of synthetic beauty. Entirely AI-crafted. A Collection Like No Other.
         </p>
+
+        {/* CATEGORY SHOWCASE */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(140px, 220px))",
+            gap: "1.5rem",
+            marginBottom: "3.5rem",
+            width: "100%",
+            maxWidth: 760,
+          }}
+        >
+          {topLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="categoryTile"
+              style={{ textDecoration: "none", display: "block" }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  aspectRatio: "3 / 4",
+                  overflow: "hidden",
+                  border: "0.5px solid #1e1e1e",
+                }}
+              >
+                <img
+                  src={link.image}
+                  alt={link.label}
+                  className="categoryTileImg"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    filter: "grayscale(35%) brightness(0.75)",
+                    transition: "transform 0.4s ease, filter 0.4s ease",
+                  }}
+                />
+                <div
+                  className="categoryTileOverlay"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "flex-end",
+                    justifyContent: "center",
+                    padding: "1.25rem 0",
+                    background: "linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.05) 60%)",
+                    transition: "background 0.4s ease",
+                  }}
+                >
+                  <span
+                    className="categoryTileLabel"
+                    style={{
+                      fontFamily: "'Josefin Sans', sans-serif",
+                      fontWeight: 300,
+                      fontSize: "0.7rem",
+                      letterSpacing: "0.3em",
+                      textTransform: "uppercase",
+                      color: "#ccc",
+                      transition: "color 0.4s ease",
+                    }}
+                  >
+                    {link.label}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
 
         {/* CTAs */}
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
@@ -408,205 +369,6 @@ export default function Home() {
               >
                 {p.body}
               </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* DIVIDER */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 4rem",
-          gap: "1.5rem",
-        }}
-      >
-        <div style={{ flex: 1, height: "0.5px", background: "#111" }} />
-        <span
-          style={{
-            fontFamily: "'Josefin Sans', sans-serif",
-            fontWeight: 200,
-            fontSize: "0.55rem",
-            letterSpacing: "0.45em",
-            color: "#808080",
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Choose Your Tier
-        </span>
-        <div style={{ flex: 1, height: "0.5px", background: "#111" }} />
-      </div>
-
-      {/* TIERS */}
-      <section style={{ padding: "7rem 2rem", maxWidth: 960, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "1px",
-            background: "#111",
-            border: "0.5px solid #111",
-          }}
-        >
-          {tiers.map((tier) => (
-            <div
-              key={tier.name}
-              style={{
-                background: tier.featured ? "#0d0d0d" : "#080808",
-                padding: "3rem 2rem",
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              {tier.featured && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "1px",
-                    background: "#9a7c4a",
-                  }}
-                />
-              )}
-
-              <div
-                style={{
-                  fontFamily: "'Josefin Sans', sans-serif",
-                  fontWeight: 200,
-                  fontSize: "0.55rem",
-                  letterSpacing: "0.45em",
-                  color: tier.textAccent,
-                  textTransform: "uppercase",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                {tier.featured ? "◆ Most Popular" : "◇ Access Tier"}
-              </div>
-
-              <h3
-                style={{
-                  fontWeight: 300,
-                  fontSize: "1.6rem",
-                  letterSpacing: "0.08em",
-                  color: "#e8e8e8",
-                  margin: "0 0 0.25rem",
-                }}
-              >
-                {tier.name}
-              </h3>
-              <p
-                style={{
-                  fontStyle: "italic",
-                  fontSize: "0.85rem",
-                  color: "#808080",
-                  margin: "0 0 2rem",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {tier.description}
-              </p>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: "0.25rem",
-                  marginBottom: "2rem",
-                }}
-              >
-
-                <span
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "2.8rem",
-                    fontWeight: 300,
-                    color: tier.textAccent,
-                    lineHeight: 1,
-                  }}
-                >
-                  {tier.price}
-                </span>
-                
-{!tier.oneOff && (
-  <span
-    style={{
-      fontFamily: "'Josefin Sans', sans-serif",
-      fontSize: "0.55rem",
-      letterSpacing: "0.2em",
-      color: "#bebbbb",
-      textTransform: "uppercase",
-    }}
-  >
-    / month
-  </span>
-)}
-              </div>
-
-              <ul
-                style={{
-                  listStyle: "none",
-                  margin: "0 0 2.5rem",
-                  padding: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.75rem",
-                  flex: 1,
-                }}
-              >
-                {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    style={{
-                      fontStyle: "italic",
-                      fontSize: "0.85rem",
-                      color: "#3a3a3a",
-                      letterSpacing: "0.03em",
-                      paddingLeft: "1.25rem",
-                      position: "relative",
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        color: tier.textAccent,
-                        fontStyle: "normal",
-                        fontSize: "0.6rem",
-                        top: "0.2rem",
-                      }}
-                    >
-                      ✦
-                    </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/subscribe"
-                style={{
-                  fontFamily: "'Josefin Sans', sans-serif",
-                  fontWeight: 300,
-                  fontSize: "0.6rem",
-                  letterSpacing: "0.35em",
-                  textTransform: "uppercase",
-                  color: tier.featured ? "#080808" : tier.textAccent,
-                  background: tier.featured ? "#c9a96e" : "transparent",
-                  textDecoration: "none",
-                  padding: "0.85rem 1.5rem",
-                  display: "block",
-                  textAlign: "center",
-                  border: tier.featured ? "none" : `0.5px solid ${tier.accent}`,
-                  transition: "opacity 0.2s",
-                }}
-              >
-                {tier.featured ? "Begin Here" : "Select"}
-              </Link>
             </div>
           ))}
         </div>
