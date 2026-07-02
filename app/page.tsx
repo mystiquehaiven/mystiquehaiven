@@ -1,3 +1,5 @@
+"use client";
+
 import HomeNav from "../components/HomeNav";
 import Link from "next/link";
 
