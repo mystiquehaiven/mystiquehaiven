@@ -48,6 +48,12 @@ const tiers = [
   },
 ];
 
+const topLinks = [
+  { label: "Anime", href: "/gallery/anime" },
+  { label: "Realistic", href: "/gallery/realistic" },
+  { label: "Characters", href: "/characters" },
+];
+
 export default function Home() {
   return (
     <div
@@ -59,7 +65,43 @@ export default function Home() {
         overflowX: "hidden",
       }}
     >
-
+      {/* TOP CATEGORY NAV */}
+      <nav
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "2.5rem",
+          padding: "1.25rem 2rem",
+          background: "rgba(8, 8, 8, 0.85)",
+          backdropFilter: "blur(6px)",
+          borderBottom: "0.5px solid #151515",
+        }}
+      >
+        {topLinks.map((link) => (
+          <Link
+            key={link.label}
+            href={link.href}
+            style={{
+              fontFamily: "'Josefin Sans', sans-serif",
+              fontWeight: 300,
+              fontSize: "0.65rem",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              color: "#888",
+              textDecoration: "none",
+              transition: "color 0.2s",
+            }}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
 
       {/* HERO */}
       <section
