@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
@@ -36,7 +36,7 @@ function shuffleVideos<T>(arr: T[]): T[] {
 function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMode): Video[] {
   const filtered =
     selectedTags.length > 0
-      ? videos.filter((v) => v.tags.some((t) => selectedTags.includes(t)))
+      ? videos.filter((v) => selectedTags.every((t) => v.tags.includes(t)))
       : videos;
 
   if (sortMode === "newest") {
@@ -56,11 +56,16 @@ function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMo
 
 export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFeedProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    const tagsParam = searchParams.get("tags");
+    return tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  });
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
@@ -157,8 +162,19 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
       if (feedListRef.current) {
         feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
       }
+
+      // Keep the URL in sync so the current tag set is shareable/bookmarkable
+      // and survives a back-navigation, without touching other params (e.g. "v").
+      const params = new URLSearchParams(searchParams.toString());
+      if (tags.length > 0) {
+        params.set("tags", tags.join(","));
+      } else {
+        params.delete("tags");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
-    []
+    [pathname, router, searchParams]
   );
 
   return (
