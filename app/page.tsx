@@ -49,9 +49,9 @@ const tiers = [
 ];
 
 const topLinks = [
-  { label: "Anime", href: "/gallery/anime" },
-  { label: "Realistic", href: "/gallery/realistic" },
-  { label: "Characters", href: "/characters" },
+  { label: "Anime", href: "/gallery/anime", image: "https://placehold.co/200x140/1a1a1a/555?text=Anime" },
+  { label: "Realistic", href: "/gallery/realistic", image: "https://placehold.co/200x140/1a1a1a/555?text=Realistic" },
+  { label: "Characters", href: "/characters", image: "https://placehold.co/200x140/1a1a1a/555?text=Characters" },
 ];
 
 export default function Home() {
@@ -76,8 +76,8 @@ export default function Home() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          gap: "2.5rem",
-          padding: "1.25rem 2rem",
+          gap: "1.75rem",
+          padding: "1rem 2rem",
           background: "rgba(8, 8, 8, 0.85)",
           backdropFilter: "blur(6px)",
           borderBottom: "0.5px solid #151515",
@@ -87,21 +87,75 @@ export default function Home() {
           <Link
             key={link.label}
             href={link.href}
-            style={{
-              fontFamily: "'Josefin Sans', sans-serif",
-              fontWeight: 300,
-              fontSize: "0.65rem",
-              letterSpacing: "0.35em",
-              textTransform: "uppercase",
-              color: "#888",
-              textDecoration: "none",
-              transition: "color 0.2s",
-            }}
+            className="navTile"
+            style={{ textDecoration: "none", display: "block" }}
           >
-            {link.label}
+            <div
+              style={{
+                position: "relative",
+                width: 92,
+                height: 60,
+                overflow: "hidden",
+                border: "0.5px solid #1e1e1e",
+              }}
+            >
+              <img
+                src={link.image}
+                alt={link.label}
+                className="navTileImg"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  filter: "grayscale(40%) brightness(0.75)",
+                  transition: "transform 0.35s ease, filter 0.35s ease",
+                }}
+              />
+              <div
+                className="navTileOverlay"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(0,0,0,0.35)",
+                  transition: "background 0.35s ease",
+                }}
+              >
+                <span
+                  className="navTileLabel"
+                  style={{
+                    fontFamily: "'Josefin Sans', sans-serif",
+                    fontWeight: 300,
+                    fontSize: "0.58rem",
+                    letterSpacing: "0.28em",
+                    textTransform: "uppercase",
+                    color: "#ccc",
+                    transition: "color 0.35s ease",
+                  }}
+                >
+                  {link.label}
+                </span>
+              </div>
+            </div>
           </Link>
         ))}
       </nav>
+
+      <style jsx global>{`
+        .navTile:hover .navTileImg {
+          transform: scale(1.12);
+          filter: grayscale(0%) brightness(0.95);
+        }
+        .navTile:hover .navTileOverlay {
+          background: rgba(0, 0, 0, 0.1);
+        }
+        .navTile:hover .navTileLabel {
+          color: #c9a96e;
+        }
+      `}</style>
 
       {/* HERO */}
       <section
