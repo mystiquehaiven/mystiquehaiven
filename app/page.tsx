@@ -14,12 +14,16 @@ const pillars = [
     title: "Curated, Not Crowdsourced",
     body: "No user uploads, no noise. Every piece is selected for its aesthetic and craft — quality over volume.",
   },
-
+  {
+    symbol: "⬡",
+    title: "Tiered Access",
+    body: "From the standard to the exclusive inner sanctum. Deeper access unlocks richer, more experimental content.",
+  },
 ];
 
 const topLinks = [
-  { label: "Anime", href: "/gallery/anime", image: "https://placehold.co/200x140/1a1a1a/555?text=Anime" },
-  { label: "Realistic", href: "/gallery/realistic", image: "https://placehold.co/200x140/1a1a1a/555?text=Realistic" },
+  { label: "Anime", href: "/videos?tags=anime", image: "https://placehold.co/200x140/1a1a1a/555?text=Anime" },
+  { label: "Realistic", href: "/videos?tags=realistic", image: "https://placehold.co/200x140/1a1a1a/555?text=Realistic" },
   { label: "Characters", href: "/characters", image: "https://placehold.co/200x140/1a1a1a/555?text=Characters" },
 ];
 
