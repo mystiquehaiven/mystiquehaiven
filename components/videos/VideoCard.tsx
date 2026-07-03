@@ -226,8 +226,9 @@ export default function VideoCard({
     }
   }, []);
 
-  useEffect(() => {
-    if (!isNear && !isActive) {
+useEffect(() => {
+  if (!isNear && !isActive) {
+    const timeout = setTimeout(() => {
       readyRef.current = false;
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -239,8 +240,9 @@ export default function VideoCard({
         video.removeAttribute("src");
         video.load();
       }
-      return;
-    }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }
 
     const video = videoRef.current;
     if (!video) return;
