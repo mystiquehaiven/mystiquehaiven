@@ -271,6 +271,18 @@ export default function Home() {
             <div style={{ width: 60, height: "0.5px", background: "#1e1e1e" }} />
           </div>
 
+          {/* Logo */}
+          <img
+            src="/logo.png"
+            alt="MYSTIQUE hAIven"
+            style={{
+            height: "clamp(48px, 8vw, 72px)",
+            width: "auto",
+            marginBottom: "1.5rem",
+            opacity: 0.92,
+            }}
+          />
+
           {/* Title */}
           <h1
             style={{
