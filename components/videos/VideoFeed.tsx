@@ -7,6 +7,8 @@ import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
+import NativeAdCard from "./BannerAdCard";
+import BannerAdCard from "./BannerAdCard";
 
 interface Video {
   id: string;
@@ -23,6 +25,14 @@ interface VideoFeedProps {
 }
 
 type SortMode = "random" | "newest" | "oldest";
+
+// One ad slot inserted after every N videos. Tune based on RPM vs retention —
+// start conservative (e.g. 6-8) and watch session length before tightening it.
+const AD_INTERVAL = 6;
+
+type FeedItem =
+  | { kind: "video"; video: Video }
+  | { kind: "ad"; adId: string };
 
 function shuffleVideos<T>(arr: T[]): T[] {
   const out = [...arr];
@@ -57,6 +67,18 @@ function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMo
   return shuffleVideos(filtered);
 }
 
+function buildFeedItems(videos: Video[]): FeedItem[] {
+  const items: FeedItem[] = [];
+  videos.forEach((video, i) => {
+    items.push({ kind: "video", video });
+    const isLast = i === videos.length - 1;
+    if (!isLast && (i + 1) % AD_INTERVAL === 0) {
+      items.push({ kind: "ad", adId: `ad-${i}` });
+    }
+  });
+  return items;
+}
+
 export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFeedProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -77,7 +99,6 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   const feedListRef = useRef<HTMLDivElement>(null);
   const didScrollToTarget = useRef(false);
 
-  // Resolve admin status and subscription from Firebase token claims
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -91,9 +112,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
       setIsAdmin(token.claims.admin === true);
 
       const userSnap = await getDoc(doc(db, "users", user.uid));
-
       const sub = userSnap.data()?.subscription as { status?: string; tier?: string } | undefined;
-
       setIsSubscribed(sub?.status === "active");
     });
     return unsubscribe;
@@ -112,20 +131,27 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
     [videos, selectedTags, sortMode]
   );
 
+  // Combined video+ad list — everything below (refs, observer, keyboard nav)
+  // indexes against THIS array, not displayVideos, so ad slots don't desync
+  // scroll/active-state tracking.
+  const feedItems = useMemo(() => buildFeedItems(displayVideos), [displayVideos]);
+
   useEffect(() => {
     const targetId = searchParams.get("v");
-    if (!targetId || didScrollToTarget.current || displayVideos.length === 0) return;
-    const index = displayVideos.findIndex((v) => v.id === targetId);
+    if (!targetId || didScrollToTarget.current || feedItems.length === 0) return;
+    const index = feedItems.findIndex(
+      (item) => item.kind === "video" && item.video.id === targetId
+    );
     if (index === -1) return;
     didScrollToTarget.current = true;
     setActiveIndex(index);
     requestAnimationFrame(() => {
       cardRefs.current[index]?.scrollIntoView({ behavior: "instant" });
     });
-  }, [displayVideos, searchParams]);
+  }, [feedItems, searchParams]);
 
   useEffect(() => {
-    cardRefs.current = cardRefs.current.slice(0, displayVideos.length);
+    cardRefs.current = cardRefs.current.slice(0, feedItems.length);
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -139,13 +165,13 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
     );
     cardRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [displayVideos.map((v) => v.id).join(",")]);
+  }, [feedItems.map((item) => (item.kind === "video" ? item.video.id : item.adId)).join(",")]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        const next = Math.min(activeIndex + 1, displayVideos.length - 1);
+        const next = Math.min(activeIndex + 1, feedItems.length - 1);
         cardRefs.current[next]?.scrollIntoView({ behavior: "smooth" });
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -155,7 +181,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, displayVideos.length]);
+  }, [activeIndex, feedItems.length]);
 
   const handleApplyTags = useCallback(
     (tags: string[], sort: SortMode) => {
@@ -166,8 +192,6 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
         feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
       }
 
-      // Keep the URL in sync so the current tag set is shareable/bookmarkable
-      // and survives a back-navigation, without touching other params (e.g. "v").
       const params = new URLSearchParams(searchParams.toString());
       if (tags.length > 0) {
         params.set("tags", tags.join(","));
@@ -182,7 +206,6 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
 
   return (
     <div className="feed-container">
-      {/* TagFilterModal is kept here but triggered from VideoCard via onOpenFilter */}
       <TagFilterModal
         isOpen={filterModalOpen}
         onClose={() => setFilterModalOpen(false)}
@@ -197,31 +220,35 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
         ref={feedListRef}
         key={`${selectedTags.join(",")}-${sortMode}`}
       >
-        {displayVideos.map((video, i) => (
+        {feedItems.map((item, i) => (
           <div
-            key={video.id}
+            key={item.kind === "video" ? item.video.id : item.adId}
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
             className="feed-item"
           >
-            <VideoCard
-              videoId={video.id}
-              playbackUrl={video.playbackUrl}
-              thumbnailUrl={video.thumbnailUrl}
-              tags={video.tags}
-              isActive={i === activeIndex}
-              isNear={Math.abs(i - activeIndex) <= 1}
-              isMuted={isMuted}
-              onMuteToggle={() => setIsMuted((m) => !m)}
-              onOpenFilter={() => setFilterModalOpen(true)}
-              hasActiveFilters={selectedTags.length > 0}
-              isAdmin={isAdmin}
-              isSubscribed={isSubscribed}
-              isAuthenticated={isAuthenticated}
-              onDelete={handleDelete}
-              onTagsUpdate={handleTagsUpdate}
-            />
+            {item.kind === "video" ? (
+              <VideoCard
+                videoId={item.video.id}
+                playbackUrl={item.video.playbackUrl}
+                thumbnailUrl={item.video.thumbnailUrl}
+                tags={item.video.tags}
+                isActive={i === activeIndex}
+                isNear={Math.abs(i - activeIndex) <= 1}
+                isMuted={isMuted}
+                onMuteToggle={() => setIsMuted((m) => !m)}
+                onOpenFilter={() => setFilterModalOpen(true)}
+                hasActiveFilters={selectedTags.length > 0}
+                isAdmin={isAdmin}
+                isSubscribed={isSubscribed}
+                isAuthenticated={isAuthenticated}
+                onDelete={handleDelete}
+                onTagsUpdate={handleTagsUpdate}
+              />
+            ) : (
+              <BannerAdCard adId={item.adId} isActive={i === activeIndex} />
+            )}
           </div>
         ))}
       </div>
