@@ -7,7 +7,6 @@ import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
-import NativeAdCard from "./BannerAdCard";
 import BannerAdCard from "./BannerAdCard";
 
 interface Video {
@@ -43,37 +42,16 @@ function shuffleVideos<T>(arr: T[]): T[] {
   return out;
 }
 
-function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMode): Video[] {
-  const filtered =
-    selectedTags.length > 0
-      ? videos.filter((v) => {
-          const videoTagsLower = v.tags.map((t) => t.toLowerCase());
-          return selectedTags.every((t) => videoTagsLower.includes(t.toLowerCase()));
-        })
-      : videos;
-
-  if (sortMode === "newest") {
-    return [...filtered].sort(
-      (a, b) =>
-        new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
-    );
-  }
-  if (sortMode === "oldest") {
-    return [...filtered].sort(
-      (a, b) =>
-        new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
-    );
-  }
-  return shuffleVideos(filtered);
-}
-
+// Ad IDs are anchored to the video that precedes the slot, not to array
+// position. That way an edit/delete elsewhere in the feed doesn't relabel
+// every ad slot after it and force BannerAdCard to remount.
 function buildFeedItems(videos: Video[]): FeedItem[] {
   const items: FeedItem[] = [];
   videos.forEach((video, i) => {
     items.push({ kind: "video", video });
     const isLast = i === videos.length - 1;
     if (!isLast && (i + 1) % AD_INTERVAL === 0) {
-      items.push({ kind: "ad", adId: `ad-${i}` });
+      items.push({ kind: "ad", adId: `ad-after-${video.id}` });
     }
   });
   return items;
@@ -98,6 +76,13 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const feedListRef = useRef<HTMLDivElement>(null);
   const didScrollToTarget = useRef(false);
+
+  // Holds the last random order we computed, keyed by the *set* of video ids
+  // it was computed from. Only recomputed when that set actually changes —
+  // not when an unrelated field (tags, etc.) on one of the videos changes.
+  // This is what stops "edit a tag" from silently reshuffling everyone's
+  // random-mode feed and desyncing ad slots / IntersectionObserver targets.
+  const shuffleOrderRef = useRef<{ key: string; order: string[] } | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -126,10 +111,48 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
     setVideos((prev) => prev.map((v) => (v.id === videoId ? { ...v, tags } : v)));
   }, []);
 
-  const displayVideos = useMemo(
-    () => processVideos(videos, selectedTags, sortMode),
-    [videos, selectedTags, sortMode]
-  );
+  const displayVideos = useMemo(() => {
+    const filtered =
+      selectedTags.length > 0
+        ? videos.filter((v) => {
+            const videoTagsLower = v.tags.map((t) => t.toLowerCase());
+            return selectedTags.every((t) => videoTagsLower.includes(t.toLowerCase()));
+          })
+        : videos;
+
+    if (sortMode === "newest") {
+      return [...filtered].sort(
+        (a, b) =>
+          new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+      );
+    }
+    if (sortMode === "oldest") {
+      return [...filtered].sort(
+        (a, b) =>
+          new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
+      );
+    }
+
+    // random — only reshuffle when the underlying id set changes (filter
+    // applied/cleared, video added/removed). A tag edit on an existing
+    // video doesn't change this key, so order is preserved across it.
+    const idKey = filtered
+      .map((v) => v.id)
+      .sort()
+      .join(",");
+
+    if (!shuffleOrderRef.current || shuffleOrderRef.current.key !== idKey) {
+      shuffleOrderRef.current = {
+        key: idKey,
+        order: shuffleVideos(filtered).map((v) => v.id),
+      };
+    }
+
+    const byId = new Map(filtered.map((v) => [v.id, v]));
+    return shuffleOrderRef.current.order
+      .map((id) => byId.get(id))
+      .filter((v): v is Video => Boolean(v));
+  }, [videos, selectedTags, sortMode]);
 
   // Combined video+ad list — everything below (refs, observer, keyboard nav)
   // indexes against THIS array, not displayVideos, so ad slots don't desync
@@ -235,10 +258,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
                 thumbnailUrl={item.video.thumbnailUrl}
                 tags={item.video.tags}
                 isActive={i === activeIndex}
-                isNear={
-	                i === activeIndex ||
-	                i === activeIndex + 1
-                }
+                isNear={i === activeIndex || i === activeIndex + 1}
                 isMuted={isMuted}
                 onMuteToggle={() => setIsMuted((m) => !m)}
                 onOpenFilter={() => setFilterModalOpen(true)}

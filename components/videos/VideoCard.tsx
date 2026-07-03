@@ -42,6 +42,12 @@ const HLS_CONFIG = {
 	abrEwmaSlowLive: 5,
 };
 
+// How long a video can sit outside the near-window before we fully tear
+// down its HLS instance and release the media element. Scrolling back
+// into view before this fires reuses the existing instance for free;
+// after it fires, coming back means a fresh manifest fetch.
+const TEARDOWN_DELAY_MS = 500;
+
 export default function VideoCard({
   videoId,
   playbackUrl,
@@ -230,26 +236,34 @@ export default function VideoCard({
     }
   }, []);
 
-useEffect(() => {
-  if (!isNear && !isActive) {
-    const timeout = setTimeout(() => {
-      readyRef.current = false;
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-      const video = videoRef.current;
-      if (video) {
+  // Single lifecycle effect for the HLS instance. Previously there were two
+  // copies of this effect on the same deps, both independently creating and
+  // tearing down hlsRef.current — harmless in the common case only because
+  // the second copy's `if (hlsRef.current) return` bailed after the first
+  // one ran, but the two teardown timeouts (500ms/250ms) both fired
+  // independently on unload, doing duplicate work. Consolidated to one.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Outside the preload window: release the HLS instance and detach the
+    // media element after a short delay, so a quick scroll-past doesn't
+    // trigger a teardown/rebuild cycle.
+    if (!isNear && !isActive) {
+      const timeout = setTimeout(() => {
+        readyRef.current = false;
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
         video.pause();
         video.removeAttribute("src");
         video.load();
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }
+      }, TEARDOWN_DELAY_MS);
+      return () => clearTimeout(timeout);
+    }
 
-    const video = videoRef.current;
-    if (!video) return;
+    // Already loaded — nothing to do.
     if (hlsRef.current) return;
 
     readyRef.current = false;
@@ -261,7 +275,6 @@ useEffect(() => {
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         readyRef.current = true;
-        hls.startLoad(-1);
         syncPlayback(video);
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -289,83 +302,10 @@ useEffect(() => {
     };
   }, [isNear, isActive, playbackUrl, syncPlayback]);
 
-useEffect(() => {
-	const video = videoRef.current;
-	if (!video) return;
-
-	// Fully unload videos that are outside the preload window.
-	if (!isNear && !isActive) {
-		const timeout = setTimeout(() => {
-			readyRef.current = false;
-
-			if (hlsRef.current) {
-				hlsRef.current.destroy();
-				hlsRef.current = null;
-			}
-
-			video.pause();
-			video.removeAttribute("src");
-			video.load();
-		}, 250);
-
-		return () => clearTimeout(timeout);
-	}
-
-	// Already loaded.
-	if (hlsRef.current) return;
-
-	readyRef.current = false;
-
-	if (Hls.isSupported()) {
-		const hls = new Hls(HLS_CONFIG);
-
-		hlsRef.current = hls;
-
-		hls.loadSource(playbackUrl);
-		hls.attachMedia(video);
-
-		hls.on(Hls.Events.MANIFEST_PARSED, () => {
-			readyRef.current = true;
-			syncPlayback(video);
-		});
-
-		hls.on(Hls.Events.ERROR, (_event, data) => {
-			if (data.fatal) {
-				console.error(
-					"HLS fatal error:",
-					data.type,
-					data.details
-				);
-			}
-		});
-	} else if (
-		video.canPlayType("application/vnd.apple.mpegurl")
-	) {
-		video.src = playbackUrl;
-
-		video.addEventListener(
-			"canplay",
-			() => {
-				readyRef.current = true;
-				syncPlayback(video);
-			},
-			{ once: true }
-		);
-	}
-
-	return () => {
-		if (hlsRef.current) {
-			hlsRef.current.destroy();
-			hlsRef.current = null;
-		}
-
-		readyRef.current = false;
-	};
-}, [isNear, isActive, playbackUrl, syncPlayback]);
-
   return (
     <div ref={cardRef} className="video-card" onContextMenu={(e) => e.preventDefault()}>
       <video
+	      preload={isActive ? "auto" : "metadata"}
         ref={videoRef}
         poster={thumbnailUrl}
         loop
