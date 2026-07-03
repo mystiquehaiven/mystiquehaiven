@@ -273,7 +273,7 @@ export default function Home() {
 
           {/* Logo */}
           <img
-            src="/logo.png"
+            src="/images/logo.png"
             alt="MYSTIQUE hAIven"
             style={{
             height: "clamp(48px, 8vw, 72px)",
