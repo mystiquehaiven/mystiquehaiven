@@ -17,7 +17,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mystique Haiven",
   description: "Best AI Gallery",
-  keywords: ["AI", "Images", "Gallery"],
+  keywords: ["AI", "Images", "Gallery", "Porn", "Adult", "Nudes", "Hentai", "Sex"],
+  referrer: "no-referrer-when-downgrade",
   verification: {
     google: 'SM2ugtAtEz2ecd3lFxnK4ThFnyHuhhjdTF6Es9cVy_0',
   },
