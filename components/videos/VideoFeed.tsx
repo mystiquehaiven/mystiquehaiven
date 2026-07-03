@@ -36,7 +36,10 @@ function shuffleVideos<T>(arr: T[]): T[] {
 function processVideos(videos: Video[], selectedTags: string[], sortMode: SortMode): Video[] {
   const filtered =
     selectedTags.length > 0
-      ? videos.filter((v) => selectedTags.every((t) => v.tags.includes(t)))
+      ? videos.filter((v) => {
+          const videoTagsLower = v.tags.map((t) => t.toLowerCase());
+          return selectedTags.every((t) => videoTagsLower.includes(t.toLowerCase()));
+        })
       : videos;
 
   if (sortMode === "newest") {
