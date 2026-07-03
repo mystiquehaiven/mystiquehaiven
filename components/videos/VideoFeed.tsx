@@ -235,7 +235,10 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
                 thumbnailUrl={item.video.thumbnailUrl}
                 tags={item.video.tags}
                 isActive={i === activeIndex}
-                isNear={Math.abs(i - activeIndex) <= 1}
+                isNear={
+	                i === activeIndex ||
+	                i === activeIndex + 1
+                }
                 isMuted={isMuted}
                 onMuteToggle={() => setIsMuted((m) => !m)}
                 onOpenFilter={() => setFilterModalOpen(true)}

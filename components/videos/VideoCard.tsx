@@ -31,11 +31,15 @@ interface VideoCardProps {
 }
 
 const HLS_CONFIG = {
-  maxBufferLength: 8,
-  maxMaxBufferLength: 15,
-  startLevel: 0,
-  abrEwmaDefaultEstimate: 2_000_000,
-  enableWorker: true,
+	maxBufferLength: 4,
+	maxMaxBufferLength: 8,
+	backBufferLength: 0,
+	startLevel: 0,
+	enableWorker: true,
+
+	// Faster adaptation for short-form content
+	abrEwmaFastLive: 2,
+	abrEwmaSlowLive: 5,
 };
 
 export default function VideoCard({
@@ -285,11 +289,79 @@ useEffect(() => {
     };
   }, [isNear, isActive, playbackUrl, syncPlayback]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !readyRef.current) return;
-    syncPlayback(video);
-  }, [isActive, isMuted, syncPlayback]);
+useEffect(() => {
+	const video = videoRef.current;
+	if (!video) return;
+
+	// Fully unload videos that are outside the preload window.
+	if (!isNear && !isActive) {
+		const timeout = setTimeout(() => {
+			readyRef.current = false;
+
+			if (hlsRef.current) {
+				hlsRef.current.destroy();
+				hlsRef.current = null;
+			}
+
+			video.pause();
+			video.removeAttribute("src");
+			video.load();
+		}, 250);
+
+		return () => clearTimeout(timeout);
+	}
+
+	// Already loaded.
+	if (hlsRef.current) return;
+
+	readyRef.current = false;
+
+	if (Hls.isSupported()) {
+		const hls = new Hls(HLS_CONFIG);
+
+		hlsRef.current = hls;
+
+		hls.loadSource(playbackUrl);
+		hls.attachMedia(video);
+
+		hls.on(Hls.Events.MANIFEST_PARSED, () => {
+			readyRef.current = true;
+			syncPlayback(video);
+		});
+
+		hls.on(Hls.Events.ERROR, (_event, data) => {
+			if (data.fatal) {
+				console.error(
+					"HLS fatal error:",
+					data.type,
+					data.details
+				);
+			}
+		});
+	} else if (
+		video.canPlayType("application/vnd.apple.mpegurl")
+	) {
+		video.src = playbackUrl;
+
+		video.addEventListener(
+			"canplay",
+			() => {
+				readyRef.current = true;
+				syncPlayback(video);
+			},
+			{ once: true }
+		);
+	}
+
+	return () => {
+		if (hlsRef.current) {
+			hlsRef.current.destroy();
+			hlsRef.current = null;
+		}
+
+		readyRef.current = false;
+	};
+}, [isNear, isActive, playbackUrl, syncPlayback]);
 
   return (
     <div ref={cardRef} className="video-card" onContextMenu={(e) => e.preventDefault()}>
