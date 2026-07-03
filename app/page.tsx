@@ -1,6 +1,5 @@
 "use client";
 
-import HomeNav from "../components/HomeNav";
 import Link from "next/link";
 
 const pillars = [
@@ -13,11 +12,6 @@ const pillars = [
     symbol: "◈",
     title: "Curated, Not Crowdsourced",
     body: "No user uploads, no noise. Every piece is selected for its aesthetic and craft — quality over volume.",
-  },
-  {
-    symbol: "⬡",
-    title: "Tiered Access",
-    body: "From the standard to the exclusive inner sanctum. Deeper access unlocks richer, more experimental content.",
   },
 ];
 
@@ -255,25 +249,6 @@ export default function Home() {
           >
             Enter the Haven
           </Link>
-          <Link
-            href="/signin"
-            style={{
-              fontFamily: "'Josefin Sans', sans-serif",
-              fontWeight: 300,
-              fontSize: "0.65rem",
-              letterSpacing: "0.4em",
-              textTransform: "uppercase",
-              color: "#555",
-              background: "transparent",
-              textDecoration: "none",
-              padding: "1rem 3rem",
-              display: "inline-block",
-              border: "0.5px solid #222",
-              transition: "color 0.2s, border-color 0.2s",
-            }}
-          >
-            Sign In
-          </Link>
         </div>
 
         {/* Scroll hint */}
@@ -381,7 +356,7 @@ export default function Home() {
       {/* FOOTER */}
       <footer
         style={{
-          borderTop: "0.5px solid #111",
+          borderTop: "0.5px solid #e8e8e8",
           padding: "3rem 3rem",
           display: "flex",
           justifyContent: "space-between",
@@ -396,7 +371,7 @@ export default function Home() {
             fontWeight: 300,
             fontSize: "0.9rem",
             letterSpacing: "0.1em",
-            color: "#222",
+            color: "#e8e8e8",
           }}
         >
           MYSTIQUE <span style={{ fontStyle: "italic" }}>hAIven</span>
@@ -415,7 +390,7 @@ export default function Home() {
                 fontWeight: 200,
                 fontSize: "0.55rem",
                 letterSpacing: "0.3em",
-                color: "#2a2a2a",
+                color: "#e8e8e8",
                 textDecoration: "none",
                 textTransform: "uppercase",
                 transition: "color 0.2s",
@@ -431,7 +406,7 @@ export default function Home() {
             fontWeight: 200,
             fontSize: "0.5rem",
             letterSpacing: "0.2em",
-            color: "#1a1a1a",
+            color: "#e8e8e8",
             textTransform: "uppercase",
           }}
         >
