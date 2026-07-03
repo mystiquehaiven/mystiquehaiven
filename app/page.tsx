@@ -22,9 +22,9 @@ const pillars = [
 ];
 
 const topLinks = [
-  { label: "Anime", href: "/videos?tags=anime", image: "https://placehold.co/200x140/1a1a1a/555?text=Anime" },
-  { label: "Realistic", href: "/videos?tags=realistic", image: "https://placehold.co/200x140/1a1a1a/555?text=Realistic" },
-  { label: "Characters", href: "/characters", image: "https://placehold.co/200x140/1a1a1a/555?text=Characters" },
+  { label: "Anime", href: "/videos?tags=anime", image: "/images/anime-tile.jpg" },
+  { label: "Realistic", href: "/videos?tags=realistic", image: "/images/realistic-tile.jpg" },
+  { label: "Characters", href: "/characters", image: "images/characters.jpg" },
 ];
 
 export default function Home() {
