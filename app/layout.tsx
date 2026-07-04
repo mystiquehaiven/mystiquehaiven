@@ -45,7 +45,17 @@ export default function RootLayout({
 					<Navbar />
 					{children}
 				</AuthProvider>
+<Script
+	id="hilltop-1"
+	strategy="beforeInteractive"
+	src="//miserly-wrap.com/bTX.VyszdxGdlJ0yYSW/cQ/BeQmr9puwZTURlMkkPZT-crxeOeT/EdytOcTRcqtcNMztE/5aMeTHM_wvMcQk"
+/>
 
+<Script
+	id="hilltop-2"
+	strategy="beforeInteractive"
+	src="//sturdy-prompt.com/c/DC9.6Gb/2-5VlnSnWqQ/9UNZzlEf5kM/TXU/1vMOyq0X3/MrTTkvxHN/TBUN3R"
+/>
         
 			</body>
 		</html>
