@@ -10,39 +10,38 @@ export default function BannerAdCard({
 	isActive: boolean;
 }) {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const hasMountedRef = useRef(false);
+	const mountedRef = useRef(false);
 
-	// Mark slot as ready (NO ad logic here)
+	// IMPORTANT: one-time mount binding
 	useEffect(() => {
 		if (!containerRef.current) return;
-		if (hasMountedRef.current) return;
+		if (mountedRef.current) return;
 
-		hasMountedRef.current = true;
+		mountedRef.current = true;
 
-		window.dispatchEvent(
-			new CustomEvent("ad-slot-mounted", {
-				detail: { adId },
-			})
-		);
-	}, [adId]);
+		// This is the missing piece:
+		// forces ad networks to "see" a fresh DOM slot
+		window.dispatchEvent(new Event("resize"));
+	}, []);
 
-	// Visibility trigger (safe + explicit)
+	// Optional visibility nudge (NOT required for rendering)
 	useEffect(() => {
 		if (!isActive) return;
 
-		window.dispatchEvent(
-			new CustomEvent("ad-slot-visible", {
-				detail: { adId },
-			})
-		);
-	}, [isActive, adId]);
+		// small nudge only (not full refresh system)
+		window.dispatchEvent(new Event("resize"));
+	}, [isActive]);
 
 	return (
 		<div
 			ref={containerRef}
 			data-ad-slot={adId}
 			className="native-ad-card"
-			style={{ width: "100%", minHeight: 250 }}
+			style={{
+				width: "100%",
+				minHeight: 250,
+				background: "#000", // helps detect empty vs loaded
+			}}
 		/>
 	);
 }
