@@ -8,7 +8,7 @@ import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
-import { initAds } from "@/lib/initads";
+import { initAds } from "@/lib/initAds";
 
 interface Video {
   id: string;
