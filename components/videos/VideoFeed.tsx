@@ -8,6 +8,7 @@ import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
+import { adBus } from "../../lib/adbus";
 
 interface Video {
   id: string;
@@ -33,6 +34,8 @@ type FeedItem =
   | { kind: "video"; video: Video }
   | { kind: "ad"; adId: string };
 
+
+
 function shuffleVideos<T>(arr: T[]): T[] {
   const out = [...arr];
   for (let i = out.length - 1; i > 0; i--) {
@@ -56,6 +59,8 @@ function buildFeedItems(videos: Video[]): FeedItem[] {
   });
   return items;
 }
+
+
 
 export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFeedProps) {
   const searchParams = useSearchParams();
@@ -83,6 +88,10 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   // This is what stops "edit a tag" from silently reshuffling everyone's
   // random-mode feed and desyncing ad slots / IntersectionObserver targets.
   const shuffleOrderRef = useRef<{ key: string; order: string[] } | null>(null);
+
+  
+
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -158,6 +167,10 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   // indexes against THIS array, not displayVideos, so ad slots don't desync
   // scroll/active-state tracking.
   const feedItems = useMemo(() => buildFeedItems(displayVideos), [displayVideos]);
+
+  useEffect(() => {
+	  adBus.refresh();
+  }, [feedItems]);
 
   useEffect(() => {
     const targetId = searchParams.get("v");
@@ -257,7 +270,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
                 playbackUrl={item.video.playbackUrl}
                 thumbnailUrl={item.video.thumbnailUrl}
                 tags={item.video.tags}
-                isActive={i === activeIndex}
+                isActive={Math.abs(i - activeIndex) <= 1}
                 isNear={i === activeIndex || i === activeIndex + 1}
                 isMuted={isMuted}
                 onMuteToggle={() => setIsMuted((m) => !m)}

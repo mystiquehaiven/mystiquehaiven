@@ -1,39 +1,47 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { adBus } from "../../lib/adbus";
 
-export default function BannerAdCard({ adId, isActive }: { adId: string; isActive: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hasLoaded = useRef(false);
+export default function BannerAdCard({
+	adId,
+	isActive,
+}: {
+	adId: string;
+	isActive: boolean;
+}) {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const initializedRef = useRef(false);
 
-  useEffect(() => {
-    if (!isActive || hasLoaded.current) return;
-    const container = containerRef.current;
-    if (!container) return;
+	useEffect(() => {
+		if (!containerRef.current) return;
 
-    hasLoaded.current = true;
+		// Register this slot once
+		if (!initializedRef.current) {
+			initializedRef.current = true;
 
-    const script = document.createElement("script");
-    script.text = `
-      (function(vwl){
-        var d = document,
-            s = d.createElement('script'),
-            l = d.scripts[d.scripts.length - 1];
-        s.settings = vwl || {};
-        s.src = "//miserly-wrap.com/bNX.VtsNdgGYl/0bYFWocI/Me_mW9/u/Z/UXlxkvPjTCcCxhOUDSgt2/OJDIk/tsNzzNE/4fOpDOYL5xMOwu";
-        s.async = true;
-        s.referrerPolicy = 'no-referrer-when-downgrade';
-        l.parentNode.insertBefore(s, l);
-      })({});
-    `;
-    container.appendChild(script);
-  }, [isActive]);
+			adBus.subscribe(() => {
+				// Tell ad network to re-scan DOM
+				window.dispatchEvent(new Event("resize"));
+			});
+		}
+	}, []);
 
-  return (
-    <div
-      ref={containerRef}
-      className="native-ad-card"
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
+	useEffect(() => {
+		if (!isActive) return;
+
+		// When slot becomes visible, trigger refresh
+		requestAnimationFrame(() => {
+			window.dispatchEvent(new Event("resize"));
+		});
+	}, [isActive]);
+
+	return (
+		<div
+			ref={containerRef}
+			data-ad-slot={adId}
+			className="native-ad-card"
+			style={{ width: "100%", minHeight: 250 }}
+		/>
+	);
 }
