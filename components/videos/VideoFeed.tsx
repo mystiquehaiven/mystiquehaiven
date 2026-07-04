@@ -8,6 +8,8 @@ import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
+import BottomStickyAd from "../BottomStickyAd";
+import MilestoneAd from "../MIlestoneComponent";
 
 interface Video {
   id: string;
@@ -316,15 +318,39 @@ useEffect(() => {
               />
             ) : (
               <div data-ad-id={item.adId}>
-                <BannerAdCard
-                  adId={item.adId}
-                  isActive={i === activeIndex}
-                />
+
+                  {!isAdmin && (
+                    <MilestoneAd
+                      zoneId="7191297-7191301"
+                      activeIndex={activeIndex}
+                    />
+                  )}
+
+
+
+                {item.kind === "ad" && !isAdmin ? (
+                  <div data-ad-id={item.adId}>
+                    <BannerAdCard
+                      adId={item.adId}
+                      isActive={i === activeIndex}
+                      zone250="YOUR_300x250_ZONE"
+                      zone100="7194081-7194085"
+                    />
+                  </div>
+                ) : null}
+
+
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {!isAdmin && (
+        <BottomStickyAd zoneId="7194081-7194085" />
+      )}
+
+
 
       {selectedTags.length > 0 && displayVideos.length === 0 && (
         <div className="feed-empty">no matches — showing all</div>
