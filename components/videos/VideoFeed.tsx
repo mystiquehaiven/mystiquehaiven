@@ -22,6 +22,8 @@ interface Video {
 interface VideoFeedProps {
   videos: Video[];
   tagCounts: Record<string, number>;
+  isAuthenticated: boolean
+  userId: string | null
 }
 
 type SortMode = "random" | "newest" | "oldest";
