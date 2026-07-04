@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import Script from "next/script"; // 👈 add this
+import Script from "next/script"; 
+import "@/lib/adNetworkBridge";
+import "@/lib/adController";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -45,22 +47,28 @@ export default function RootLayout({
 				</AuthProvider>
 
 				{/* ✅ PUT SCRIPT HERE (after app render) */}
-				<Script id="hilltopads" strategy="afterInteractive">
-					{`
-						(function(xubz){
-							var d = document,
-								s = d.createElement('script'),
-								l = d.scripts[d.scripts.length - 1];
+<Script id="ad-network-1" strategy="afterInteractive">
+{`
+	(function(){
+		var s = document.createElement('script');
+		s.src = "//miserly-wrap.com/bTX.VyszdxGdlJ0yYSW/cQ/BeQmr9puwZTURlMkkPZT-crxeOeT/EdytOcTRcqtcNMztE/5aMeTHM_wvMcQk";
+		s.async = true;
+		document.head.appendChild(s);
+	})();
+`}
+</Script>
 
-							s.settings = xubz || {};
-							s.src = "//miserly-wrap.com/bTX.VyszdxGdlJ0yYSW/cQ/BeQmr9puwZTURlMkkPZT-crxeOeT/EdytOcTRcqtcNMztE/5aMeTHM_wvMcQk";
-							s.async = true;
-							s.referrerPolicy = 'no-referrer-when-downgrade';
-
-							l.parentNode.insertBefore(s, l);
-						})({})
-					`}
-				</Script>
+<Script id="ad-network-2" strategy="afterInteractive">
+{`
+	(function(){
+		var s = document.createElement('script');
+		s.src = "//sturdy-prompt.com/c/DC9.6Gb/2-5VlnSnWqQ/9UNZzlEf5kM/TXU/1vMOyq0X3/MrTTkvxHN/TBUN3R";
+		s.async = true;
+		document.head.appendChild(s);
+	})();
+`}
+</Script>
+        
 			</body>
 		</html>
 	);

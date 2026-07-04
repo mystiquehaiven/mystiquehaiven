@@ -170,9 +170,36 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   // scroll/active-state tracking.
   const feedItems = useMemo(() => buildFeedItems(displayVideos), [displayVideos]);
 
-  useEffect(() => {
-	  adBus.refresh();
-  }, [feedItems]);
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        const el = entry.target as HTMLElement;
+        const adId = el.getAttribute("data-ad-id");
+
+        if (!adId) return;
+
+        window.dispatchEvent(
+          new CustomEvent("ad-slot-visible", {
+            detail: { adId },
+          })
+        );
+      });
+    },
+    {
+      root: feedListRef.current,
+      threshold: 0.5,
+      rootMargin: "200px",
+    }
+  );
+
+  const nodes = document.querySelectorAll("[data-ad-id]");
+  nodes.forEach((n) => observer.observe(n));
+
+  return () => observer.disconnect();
+}, [feedItems]);
 
   useEffect(() => {
     const targetId = searchParams.get("v");
@@ -285,7 +312,12 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
                 onTagsUpdate={handleTagsUpdate}
               />
             ) : (
-              <BannerAdCard adId={item.adId} isActive={i === activeIndex} />
+              <div data-ad-id={item.adId}>
+                <BannerAdCard
+                  adId={item.adId}
+                  isActive={i === activeIndex}
+                />
+              </div>
             )}
           </div>
         ))}

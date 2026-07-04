@@ -263,30 +263,26 @@ export default function VideoCard({
 
     readyRef.current = false;
 
-    if (Hls.isSupported()) {
-      const hls = new Hls(HLS_CONFIG);
-      hlsRef.current = hls;
-      hls.loadSource(playbackUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        readyRef.current = true;
-        syncPlayback(video);
-      });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) console.error("HLS fatal error:", data.type, data.details);
-      });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = playbackUrl;
-      video.load();
-      video.addEventListener(
-        "canplay",
-        () => {
-          readyRef.current = true;
-          syncPlayback(video);
-        },
-        { once: true }
-      );
+if (Hls.isSupported()) {
+  if (!isActiveRef.current) return;
+
+  const hls = new Hls(HLS_CONFIG);
+  hlsRef.current = hls;
+
+  hls.loadSource(playbackUrl);
+  hls.attachMedia(video);
+
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    readyRef.current = true;
+    syncPlayback(video);
+  });
+
+  hls.on(Hls.Events.ERROR, (_event, data) => {
+    if (data.fatal) {
+      console.error("HLS fatal error:", data.type, data.details);
     }
+  });
+}
 
     return () => {
       readyRef.current = false;

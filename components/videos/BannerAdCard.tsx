@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { adBus } from "../../lib/adbus";
 
 export default function BannerAdCard({
 	adId,
@@ -11,30 +10,32 @@ export default function BannerAdCard({
 	isActive: boolean;
 }) {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const initializedRef = useRef(false);
+	const hasMountedRef = useRef(false);
 
+	// Mark slot as ready (NO ad logic here)
 	useEffect(() => {
 		if (!containerRef.current) return;
+		if (hasMountedRef.current) return;
 
-		// Register this slot once
-		if (!initializedRef.current) {
-			initializedRef.current = true;
+		hasMountedRef.current = true;
 
-			adBus.subscribe(() => {
-				// Tell ad network to re-scan DOM
-				window.dispatchEvent(new Event("resize"));
-			});
-		}
-	}, []);
+		window.dispatchEvent(
+			new CustomEvent("ad-slot-mounted", {
+				detail: { adId },
+			})
+		);
+	}, [adId]);
 
+	// Visibility trigger (safe + explicit)
 	useEffect(() => {
 		if (!isActive) return;
 
-		// When slot becomes visible, trigger refresh
-		requestAnimationFrame(() => {
-			window.dispatchEvent(new Event("resize"));
-		});
-	}, [isActive]);
+		window.dispatchEvent(
+			new CustomEvent("ad-slot-visible", {
+				detail: { adId },
+			})
+		);
+	}, [isActive, adId]);
 
 	return (
 		<div
