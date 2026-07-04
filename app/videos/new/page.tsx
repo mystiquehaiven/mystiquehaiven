@@ -79,5 +79,12 @@ export default function NewVideosPage() {
 
   if (!user) return null;
 
-  return <VideoFeed videos={videos} tagCounts={tagCounts} />;
+  return (
+  <VideoFeed
+    videos={videos}
+    tagCounts={tagCounts}
+    userId={user?.uid ?? null}
+    isAuthenticated={!!user}
+  />
+);
 }
