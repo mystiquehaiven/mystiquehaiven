@@ -92,7 +92,7 @@ export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFee
   const shuffleOrderRef = useRef<{ key: string; order: string[] } | null>(null);
 
   
-
+  
 
 
   useEffect(() => {
@@ -200,6 +200,15 @@ useEffect(() => {
 
   return () => observer.disconnect();
 }, [feedItems]);
+
+useEffect(() => {
+	const interval = setInterval(() => {
+		console.log("AD RESCAN TRIGGER");
+		window.dispatchEvent(new Event("resize"));
+	}, 3000);
+
+	return () => clearInterval(interval);
+}, []);
 
   useEffect(() => {
     const targetId = searchParams.get("v");
