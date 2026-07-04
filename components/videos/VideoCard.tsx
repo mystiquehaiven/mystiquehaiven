@@ -82,7 +82,6 @@ export default function VideoCard({
   // Favorites state
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavLoading, setIsFavLoading] = useState(false);
-  const [showUpsell, setShowUpsell] = useState(false);
 
   useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
@@ -95,7 +94,7 @@ export default function VideoCard({
 
   // Load favorite state from Firestore when active
   useEffect(() => {
-    if (!isActive || !isAuthenticated || !isSubscribed) return;
+    if (!isActive || !isAuthenticated) return;
     const user = auth.currentUser;
     if (!user) return;
 
@@ -148,11 +147,7 @@ export default function VideoCard({
     // Unauthenticated: hide button entirely (handled in render), but guard here too
     if (!isAuthenticated) return;
 
-    // Not subscribed: show upsell
-    if (!isSubscribed) {
-      setShowUpsell(true);
-      return;
-    }
+
 
     const user = auth.currentUser;
     if (!user || isFavLoading) return;
@@ -468,38 +463,6 @@ export default function VideoCard({
         </div>
       )}
 
-      {/* Upsell modal for non-subscribed authenticated users */}
-      {showUpsell && (
-        <div
-          className="upsell-overlay"
-          onClick={() => setShowUpsell(false)}
-        >
-          <div
-            className="upsell-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="upsell-close"
-              onClick={() => setShowUpsell(false)}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-            <div className="upsell-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </div>
-            <h3 className="upsell-title">Save Your Favorites</h3>
-            <p className="upsell-body">
-              Subscribe to bookmark videos and revisit them anytime from your profile.
-            </p>
-            <a href="/subscribe" className="upsell-cta">
-              View Plans
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
