@@ -9,7 +9,7 @@ import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
 import BottomStickyAd from "../BottomStickyAd";
-import MilestoneAd from "../MIlestoneComponent";
+import MilestoneAd from "../MilestoneAd";
 
 interface Video {
   id: string;

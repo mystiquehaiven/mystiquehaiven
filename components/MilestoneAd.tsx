@@ -1,33 +1,55 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export default function BottomStickyAd({ zoneId }: { zoneId: string }) {
+export default function MilestoneAd({
+  zoneId,
+  activeIndex,
+}: {
+  zoneId: string;
+  activeIndex: number;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mountedRef = useRef(false);
+  const [shouldShow, setShouldShow] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Time trigger (2 minutes)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldShow(true);
+    }, 120000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Scroll trigger (20 videos)
+  useEffect(() => {
+    if (activeIndex >= 20) {
+      setShouldShow(true);
+    }
+  }, [activeIndex]);
 
   // Mount event
   useEffect(() => {
-    if (!containerRef.current || mountedRef.current) return;
-    mountedRef.current = true;
+    if (!shouldShow || mounted || !containerRef.current) return;
+    setMounted(true);
 
     window.dispatchEvent(
-      new CustomEvent("ad-slot-mounted", { detail: { adId: "bottom-sticky" } })
+      new CustomEvent("ad-slot-mounted", { detail: { adId: "milestone-ad" } })
     );
 
     mountAd();
-  }, []);
+  }, [shouldShow]);
 
   // Visibility event
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!shouldShow || !containerRef.current) return;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           window.dispatchEvent(
             new CustomEvent("ad-slot-visible", {
-              detail: { adId: "bottom-sticky" },
+              detail: { adId: "milestone-ad" },
             })
           );
         }
@@ -36,12 +58,12 @@ export default function BottomStickyAd({ zoneId }: { zoneId: string }) {
 
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [shouldShow]);
 
-  // Refresh listener
+  // Refresh listener (milestone only triggers once)
   useEffect(() => {
     const handler = (e: CustomEvent) => {
-      if (e.detail.adId !== "bottom-sticky") return;
+      if (e.detail.adId !== "milestone-ad") return;
       mountAd();
     };
 
@@ -69,19 +91,18 @@ export default function BottomStickyAd({ zoneId }: { zoneId: string }) {
     containerRef.current.appendChild(script);
   }
 
+  if (!shouldShow) return null;
+
   return (
     <div
       ref={containerRef}
-      data-ad-id="bottom-sticky"
+      data-ad-id="milestone-ad"
       style={{
-        position: "sticky",
-        bottom: 0,
         width: "100%",
-        zIndex: 999,
-        background: "transparent",
+        padding: "20px 0",
         display: "flex",
         justifyContent: "center",
-        padding: "6px 0",
+        background: "transparent",
       }}
     />
   );

@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { adController } from "@/lib/adController";
 
 interface BannerAdCardProps {
   adId: string;
   isActive: boolean;
-
-  // Pass your zone IDs from parent
-  zone250: string; // MultiTag 300x250 (desktop + mobile)
-  zone100: string; // MultiTag 300x100 (mobile-only)
+  zone250: string; // MultiTag 300x250
+  zone100: string; // MultiTag 300x100 (mobile only)
 }
 
 export default function BannerAdCard({
@@ -21,23 +20,50 @@ export default function BannerAdCard({
   const mountedRef = useRef(false);
   const [zoneId, setZoneId] = useState<string | null>(null);
 
-  
-
-  // Pick correct zone based on viewport width
+  // Determine correct zone
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     setZoneId(isMobile ? zone100 : zone250);
   }, [zone250, zone100]);
 
-  // One-time mount: create fresh DOM slot + load Hilltop script
+  // Emit mount event
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (!zoneId) return;
-    if (mountedRef.current) return;
-
+    if (!containerRef.current || mountedRef.current || !zoneId) return;
     mountedRef.current = true;
 
-    // Create the ad container
+    window.dispatchEvent(
+      new CustomEvent("ad-slot-mounted", { detail: { adId } })
+    );
+
+    mountAd();
+  }, [zoneId]);
+
+  // Visibility nudge
+  useEffect(() => {
+    if (isActive) {
+      window.dispatchEvent(
+        new CustomEvent("ad-slot-visible", { detail: { adId } })
+      );
+    }
+  }, [isActive]);
+
+  // Listen for refresh requests
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      if (e.detail.adId !== adId) return;
+      refreshAd();
+    };
+
+    window.addEventListener("ad-fill-request", handler as EventListener);
+    return () =>
+      window.removeEventListener("ad-fill-request", handler as EventListener);
+  }, [adId, zoneId]);
+
+  function mountAd() {
+    if (!containerRef.current || !zoneId) return;
+
+    containerRef.current.innerHTML = "";
+
     const adDiv = document.createElement("div");
     adDiv.setAttribute("data-ht-zone", zoneId);
     adDiv.style.width = "100%";
@@ -46,36 +72,15 @@ export default function BannerAdCard({
 
     containerRef.current.appendChild(adDiv);
 
-    // Load Hilltop script
     const script = document.createElement("script");
     script.src = "https://js.hilltopads.com/ht.js";
     script.async = true;
     containerRef.current.appendChild(script);
-
-    return () => {
-      script.remove();
-      adDiv.remove();
-    };
-  }, [zoneId]);
-
-  // Visibility nudge (lightweight)
-  useEffect(() => {
-    if (!isActive) return;
-    window.dispatchEvent(new Event("resize"));
-  }, [isActive]);
-
-  useEffect(() => {
-  if (!mountedRef.current && containerRef.current) {
-    mountedRef.current = true;
-
-    window.dispatchEvent(
-      new CustomEvent("ad-slot-mounted", {
-        detail: { adId },
-      })
-    );
   }
-}, []);
 
+  function refreshAd() {
+    mountAd();
+  }
 
   return (
     <div
