@@ -8,7 +8,7 @@ import { auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
-import { adBus } from "../../lib/adbus";
+import { initAds } from "@/lib/initads";
 
 interface Video {
   id: string;
@@ -201,14 +201,7 @@ useEffect(() => {
   return () => observer.disconnect();
 }, [feedItems]);
 
-useEffect(() => {
-	const interval = setInterval(() => {
-		console.log("AD RESCAN TRIGGER");
-		window.dispatchEvent(new Event("resize"));
-	}, 3000);
 
-	return () => clearInterval(interval);
-}, []);
 
   useEffect(() => {
     const targetId = searchParams.get("v");
@@ -277,6 +270,10 @@ useEffect(() => {
     },
     [pathname, router, searchParams]
   );
+
+  useEffect(() => {
+	initAds();
+}, []);
 
   return (
     <div className="feed-container">

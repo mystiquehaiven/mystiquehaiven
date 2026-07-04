@@ -46,28 +46,6 @@ export default function RootLayout({
 					{children}
 				</AuthProvider>
 
-				{/* ✅ PUT SCRIPT HERE (after app render) */}
-<Script id="ad-network-1" strategy="afterInteractive">
-{`
-	(function(){
-		var s = document.createElement('script');
-		s.src = "//miserly-wrap.com/bTX.VyszdxGdlJ0yYSW/cQ/BeQmr9puwZTURlMkkPZT-crxeOeT/EdytOcTRcqtcNMztE/5aMeTHM_wvMcQk";
-		s.async = true;
-		document.head.appendChild(s);
-	})();
-`}
-</Script>
-
-<Script id="ad-network-2" strategy="afterInteractive">
-{`
-	(function(){
-		var s = document.createElement('script');
-		s.src = "//sturdy-prompt.com/c/DC9.6Gb/2-5VlnSnWqQ/9UNZzlEf5kM/TXU/1vMOyq0X3/MrTTkvxHN/TBUN3R";
-		s.async = true;
-		document.head.appendChild(s);
-	})();
-`}
-</Script>
         
 			</body>
 		</html>
