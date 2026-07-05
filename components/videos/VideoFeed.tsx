@@ -401,56 +401,65 @@ useEffect(() => {
 				onApply={handleApplyTags}
 			/>
 
-			<Virtuoso
-				ref={virtuosoRef}
-				data={feedItems}
-				useWindowScroll
-				rangeChanged={handleRangeChanged}
-				itemContent={(index, item: FeedItem) => {
-if (item.kind === "ad") {
-	return (
-		<AdSlot
-			adId={item.adId}
-			onImpression={(adId) => {
-				const slot = getOrCreateAdSlot(adId);
+    
+<div className="feed-viewport">
+	<Virtuoso
+		ref={virtuosoRef}
+		data={feedItems}
+		rangeChanged={handleRangeChanged}
+		style={{ height: "100%", width: "100%" }}
+		itemContent={(index, item: FeedItem) => {
+			if (item.kind === "ad") {
+				return (
+					<div style={{ height: 250, width: "100%" }}>
+						<AdSlot
+							adId={item.adId}
+							onImpression={(adId) => {
+								const slot = getOrCreateAdSlot(adId);
 
-				slot.impressions += 1;
-				slot.lastImpressionAt = Date.now();
-				slot.viewed = true;
+								slot.impressions += 1;
+								slot.lastImpressionAt = Date.now();
+								slot.viewed = true;
 
-				window.dispatchEvent(
-					new CustomEvent("ad-impression", {
-						detail: { adId }
-					})
-				);
-			}}
-		/>
-	);
-}
-
-					const isActive = Math.abs(index - activeIndex) <= 1;
-
-					return (
-						<VideoCard
-							videoId={item.video.id}
-							playbackUrl={item.video.playbackUrl}
-							thumbnailUrl={item.video.thumbnailUrl}
-							tags={item.video.tags}
-							isActive={isActive}
-							isNear={index === activeIndex}
-							isMuted={isMuted}
-							onMuteToggle={() => setIsMuted((m) => !m)}
-							onOpenFilter={() => setFilterModalOpen(true)}
-							hasActiveFilters={selectedTags.length > 0}
-							isAdmin={isAdmin}
-							isSubscribed={isSubscribed}
-							isAuthenticated={isAuthenticated}
-							onDelete={handleDelete}
-							onTagsUpdate={handleTagsUpdate}
+								window.dispatchEvent(
+									new CustomEvent("ad-impression", {
+										detail: { adId }
+									})
+								);
+							}}
 						/>
-					);
-				}}
-			/>
+					</div>
+				);
+			}
+
+			const isActive = Math.abs(index - activeIndex) <= 1;
+
+			return (
+				<div style={{ height: "100vh", width: "100%" }}>
+					<VideoCard
+						videoId={item.video.id}
+						playbackUrl={item.video.playbackUrl}
+						thumbnailUrl={item.video.thumbnailUrl}
+						tags={item.video.tags}
+						isActive={isActive}
+						isNear={index === activeIndex}
+						isMuted={isMuted}
+						onMuteToggle={() => setIsMuted((m) => !m)}
+						onOpenFilter={() => setFilterModalOpen(true)}
+						hasActiveFilters={selectedTags.length > 0}
+						isAdmin={isAdmin}
+						isSubscribed={isSubscribed}
+						isAuthenticated={isAuthenticated}
+						onDelete={handleDelete}
+						onTagsUpdate={handleTagsUpdate}
+					/>
+				</div>
+			);
+		}}
+	/>
+</div>
+      
+
 		</div>
 	);
 }

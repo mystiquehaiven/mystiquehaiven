@@ -3,6 +3,13 @@
 	width: 100%;
 }
 
+.feed-viewport {
+	height: 100dvh;
+	width: 100vw;
+	overflow: hidden;
+	position: relative;
+}
+
 .feed-list {
 	width: 100%;
 }
