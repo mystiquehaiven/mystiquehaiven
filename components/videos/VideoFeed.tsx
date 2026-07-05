@@ -168,6 +168,9 @@ export default function VideoFeed({
 	videos: initialVideos,
 	tagCounts
 }: VideoFeedProps) {
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const activeIndexRef = useRef(0);
+  const snapTimeout = useRef<NodeJS.Timeout | null>(null);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -290,37 +293,44 @@ const handleRangeChanged = useCallback((range: any) => {
 }, [feedItems]);
 
 	// ---------------- KEYBOARD NAV ----------------
-	useEffect(() => {
-		const onKeyDown = (e: KeyboardEvent) => {
-			if (!virtuosoRef.current) return;
+useEffect(() => {
+	const onKeyDown = (e: KeyboardEvent) => {
+		if (!virtuosoRef.current) return;
 
-			if (e.key === "ArrowDown") {
-				e.preventDefault();
-				const next = Math.min(
-					activeIndex + 1,
-					feedItems.length - 1
-				);
-				virtuosoRef.current.scrollToIndex({
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+
+			setActiveIndex((prev) => {
+				const next = Math.min(prev + 1, feedItems.length - 1);
+
+				virtuosoRef.current?.scrollToIndex({
 					index: next,
 					behavior: "smooth"
 				});
-				setActiveIndex(next);
-			}
 
-			if (e.key === "ArrowUp") {
-				e.preventDefault();
-				const prev = Math.max(activeIndex - 1, 0);
-				virtuosoRef.current.scrollToIndex({
-					index: prev,
+				return next;
+			});
+		}
+
+		if (e.key === "ArrowUp") {
+			e.preventDefault();
+
+			setActiveIndex((prev) => {
+				const next = Math.max(prev - 1, 0);
+
+				virtuosoRef.current?.scrollToIndex({
+					index: next,
 					behavior: "smooth"
 				});
-				setActiveIndex(prev);
-			}
-		};
 
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [activeIndex, feedItems.length]);
+				return next;
+			});
+		}
+	};
+
+	window.addEventListener("keydown", onKeyDown);
+	return () => window.removeEventListener("keydown", onKeyDown);
+}, [feedItems.length]);
 
 	// ---------------- URL SCROLL TARGET ----------------
 	useEffect(() => {

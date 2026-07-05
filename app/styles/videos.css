@@ -1,19 +1,17 @@
 /* ─── Feed Layout ─────────────────────────────────────────────── */
-
 .feed-container {
-	height: 100vh;
-	overflow: auto;
+	width: 100%;
 }
+
+.feed-list {
+	width: 100%;
+}
+
 
 .feed-item {
 	width: 100%;
 }
 
-.feed-list {
-  height: 100dvh;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-}
 
 
 /* ─── Video Card ──────────────────────────────────────────────── */
