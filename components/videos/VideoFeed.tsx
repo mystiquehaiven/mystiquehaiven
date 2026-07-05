@@ -168,9 +168,7 @@ export default function VideoFeed({
 	videos: initialVideos,
 	tagCounts
 }: VideoFeedProps) {
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const activeIndexRef = useRef(0);
-  const snapTimeout = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -290,7 +288,20 @@ export default function VideoFeed({
 	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
 const handleRangeChanged = useCallback((range: any) => {
 	evaluateAdVisibility(feedItems, range);
-}, [feedItems]);
+
+	// clear previous timer
+	if (scrollTimeout.current) {
+		clearTimeout(scrollTimeout.current);
+	}
+
+	// detect scroll pause
+	scrollTimeout.current = setTimeout(() => {
+		virtuosoRef.current?.scrollToIndex({
+			index: activeIndex,
+			behavior: "smooth"
+		});
+	}, 120);
+}, [feedItems, activeIndex]);
 
 	// ---------------- KEYBOARD NAV ----------------
 useEffect(() => {
