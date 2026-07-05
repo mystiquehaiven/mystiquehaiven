@@ -6,8 +6,9 @@ import { adController } from "@/lib/adController";
 interface BannerAdCardProps {
   adId: string;
   isActive: boolean;
-  zone250: string; // MultiTag 300x250
-  zone100: string; // MultiTag 300x100 (mobile only)
+  zone250: string;       // Hilltop desktop zone
+  zone100: string;       // Hilltop mobile zone
+  adsterraZone: string;  // Adsterra zone
 }
 
 export default function BannerAdCard({
@@ -15,18 +16,19 @@ export default function BannerAdCard({
   isActive,
   zone250,
   zone100,
+  adsterraZone,
 }: BannerAdCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
   const [zoneId, setZoneId] = useState<string | null>(null);
 
-  // Determine correct zone
+  // Select correct zone based on viewport
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     setZoneId(isMobile ? zone100 : zone250);
   }, [zone250, zone100]);
 
-  // Emit mount event
+  // Emit mount event + mount via controller
   useEffect(() => {
     if (!containerRef.current || mountedRef.current || !zoneId) return;
     mountedRef.current = true;
@@ -35,52 +37,32 @@ export default function BannerAdCard({
       new CustomEvent("ad-slot-mounted", { detail: { adId } })
     );
 
-    mountAd();
-  }, [zoneId]);
+    adController.mountAd(containerRef.current, zoneId, adsterraZone);
+  }, [zoneId, adId, adsterraZone]);
 
-  // Visibility nudge
+  // Visibility event
   useEffect(() => {
     if (isActive) {
       window.dispatchEvent(
         new CustomEvent("ad-slot-visible", { detail: { adId } })
       );
     }
-  }, [isActive]);
+  }, [isActive, adId]);
 
-  // Listen for refresh requests
+  // Refresh listener
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail.adId !== adId) return;
-      refreshAd();
+
+      if (containerRef.current && zoneId) {
+        adController.refreshAd(containerRef.current, zoneId, adsterraZone);
+      }
     };
 
     window.addEventListener("ad-fill-request", handler as EventListener);
     return () =>
       window.removeEventListener("ad-fill-request", handler as EventListener);
-  }, [adId, zoneId]);
-
-  function mountAd() {
-    if (!containerRef.current || !zoneId) return;
-
-    containerRef.current.innerHTML = "";
-
-    const adDiv = document.createElement("div");
-    adDiv.setAttribute("data-ht-zone", zoneId);
-    adDiv.style.width = "100%";
-    adDiv.style.maxWidth = "300px";
-    adDiv.style.margin = "0 auto";
-
-    containerRef.current.appendChild(adDiv);
-
-    const script = document.createElement("script");
-    script.src = "https://js.hilltopads.com/ht.js";
-    script.async = true;
-    containerRef.current.appendChild(script);
-  }
-
-  function refreshAd() {
-    mountAd();
-  }
+  }, [adId, zoneId, adsterraZone]);
 
   return (
     <div

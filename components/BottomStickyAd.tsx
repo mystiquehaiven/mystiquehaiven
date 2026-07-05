@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { adController } from "../lib/adController";
 
-export default function BottomStickyAd({ zoneId }: { zoneId: string }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+interface BottomStickyAdProps {
+  zoneId: string;        // Hilltop sticky zone
+  adsterraZone: string;  // Adsterra sticky zone
+}
+
+export default function BottomStickyAd({
+  zoneId,
+  adsterraZone,
+}: BottomStickyAdProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
-  // Mount event
+  // Mount
   useEffect(() => {
     if (!containerRef.current || mountedRef.current) return;
     mountedRef.current = true;
@@ -15,73 +24,42 @@ export default function BottomStickyAd({ zoneId }: { zoneId: string }) {
       new CustomEvent("ad-slot-mounted", { detail: { adId: "bottom-sticky" } })
     );
 
-    mountAd();
-  }, []);
+    adController.mountAd(containerRef.current, zoneId, adsterraZone);
+  }, [zoneId, adsterraZone]);
 
-  // Visibility event
+  // Visibility
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          window.dispatchEvent(
-            new CustomEvent("ad-slot-visible", {
-              detail: { adId: "bottom-sticky" },
-            })
-          );
-        }
-      });
-    });
-
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    window.dispatchEvent(
+      new CustomEvent("ad-slot-visible", { detail: { adId: "bottom-sticky" } })
+    );
   }, []);
 
-  // Refresh listener
+  // Refresh
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail.adId !== "bottom-sticky") return;
-      mountAd();
+
+      if (containerRef.current) {
+        adController.refreshAd(containerRef.current, zoneId, adsterraZone);
+      }
     };
 
     window.addEventListener("ad-fill-request", handler as EventListener);
     return () =>
       window.removeEventListener("ad-fill-request", handler as EventListener);
-  }, []);
-
-  function mountAd() {
-    if (!containerRef.current) return;
-
-    containerRef.current.innerHTML = "";
-
-    const adDiv = document.createElement("div");
-    adDiv.setAttribute("data-ht-zone", zoneId);
-    adDiv.style.width = "100%";
-    adDiv.style.maxWidth = "300px";
-    adDiv.style.margin = "0 auto";
-
-    containerRef.current.appendChild(adDiv);
-
-    const script = document.createElement("script");
-    script.src = "https://js.hilltopads.com/ht.js";
-    script.async = true;
-    containerRef.current.appendChild(script);
-  }
+  }, [zoneId, adsterraZone]);
 
   return (
     <div
       ref={containerRef}
-      data-ad-id="bottom-sticky"
+      className="bottom-sticky-ad"
       style={{
-        position: "sticky",
+        position: "fixed",
         bottom: 0,
         width: "100%",
-        zIndex: 999,
-        background: "transparent",
-        display: "flex",
-        justifyContent: "center",
-        padding: "6px 0",
+        minHeight: 90,
+        background: "#000",
+        zIndex: 9999,
       }}
     />
   );

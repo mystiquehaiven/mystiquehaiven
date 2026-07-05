@@ -32,6 +32,7 @@ type SortMode = "random" | "newest" | "oldest";
 // One ad slot inserted after every N videos. Tune based on RPM vs retention —
 // start conservative (e.g. 6-8) and watch session length before tightening it.
 const AD_INTERVAL = 6;
+const milestonePoints = [20, 40, 60]; // or whatever you use
 
 type FeedItem =
   | { kind: "video"; video: Video }
@@ -321,9 +322,12 @@ useEffect(() => {
 
                   {!isAdmin && (
                     <MilestoneAd
-                      zoneId="7191297-7191301"
-                      activeIndex={activeIndex}
+                      adId="milestone-20"
+                      zoneId="7191297-7191301"          // Hilltop zone
+                      adsterraZone="ADSTERRA_ZONE_ID"   // your Adsterra zone
+                      isActive={activeIndex >= 20}      // milestone trigger
                     />
+
                   )}
 
 
@@ -333,8 +337,9 @@ useEffect(() => {
                     <BannerAdCard
                       adId={item.adId}
                       isActive={i === activeIndex}
-                      zone250="YOUR_300x250_ZONE"
+                      zone250="7194069-7194073"
                       zone100="7194081-7194085"
+                      adsterraZone="29323808"
                     />
                   </div>
                 ) : null}
@@ -347,7 +352,11 @@ useEffect(() => {
       </div>
 
       {!isAdmin && (
-        <BottomStickyAd zoneId="7194081-7194085" />
+        <BottomStickyAd
+          zoneId="7194081-7194085"          // Hilltop sticky zone
+          adsterraZone="29323811"  // Your Adsterra sticky zone
+        />
+
       )}
 
 

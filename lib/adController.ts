@@ -1,78 +1,79 @@
-type AdEvent = {
-	adId: string;
-};
-
-type AdState = {
-	lastShown: number;
-	lastMounted: number;
-};
+import { HilltopAdapter } from "../lib/ads/adAdapters";
+import { AdsterraAdapter } from "../lib/ads/adAdapters";
+import { FallbackAdapter } from "../lib/ads/adAdapters";
 
 class AdController {
-	private state: Map<string, AdState> = new Map();
-	private cooldownMs = 15_000; // prevents spam refresh per slot
+  private geo: string | null = null;
 
-	constructor() {
-		if (typeof window !== "undefined") {
-			this.init();
-		}
-	}
+  private adapters = {
+    hilltop: HilltopAdapter,
+    adsterra: AdsterraAdapter,
+    fallback: FallbackAdapter,
+  };
 
-	private init() {
-		window.addEventListener("ad-slot-mounted", this.onMounted as EventListener);
-		window.addEventListener("ad-slot-visible", this.onVisible as EventListener);
-	}
+  async loadGeo() {
+    if (this.geo) return this.geo;
 
-	private onMounted = (event: CustomEvent<AdEvent>) => {
-		const { adId } = event.detail;
+    try {
+      const res = await fetch("/api/geo");
+      const data = await res.json();
+      this.geo = data.country || "US";
+    } catch {
+      this.geo = "US";
+    }
 
-		const current = this.getState(adId);
-		current.lastMounted = Date.now();
+    return this.geo;
+  }
 
-		this.state.set(adId, current);
-	};
+  chooseAdapterByGeo() {
+    if (!this.geo) return this.adapters.hilltop;
 
-	private onVisible = (event: CustomEvent<AdEvent>) => {
-		const { adId } = event.detail;
+    const country = this.geo.toUpperCase();
 
-		const now = Date.now();
-		const current = this.getState(adId);
+    // Tier‑1 / Tier‑2 → Hilltop
+    if (["US", "CA", "UK", "AU", "NZ", "DE", "FR", "SE", "NO"].includes(country)) {
+      return this.adapters.hilltop;
+    }
 
-		// cooldown guard (prevents duplicate fills)
-		if (now - current.lastShown < this.cooldownMs) {
-			return;
-		}
+    // Tier‑3 / Tier‑4 → Adsterra
+    if (["IN", "PK", "BD", "ID", "PH", "NG", "ZA", "KE", "GH"].includes(country)) {
+      return this.adapters.adsterra;
+    }
 
-		current.lastShown = now;
-		this.state.set(adId, current);
+    // Everything else → fallback
+    return this.adapters.fallback;
+  }
 
-		this.triggerAdFill(adId);
-	};
+  async mountAd(container: HTMLElement, hilltopZone: string, adsterraZone: string) {
+    await this.loadGeo();
 
-	private triggerAdFill(adId: string) {
-		// This is the ONLY place ad refresh should happen
+    const primaryAdapter = this.chooseAdapterByGeo();
+    const fallbackAdapter =
+      primaryAdapter === this.adapters.hilltop
+        ? this.adapters.adsterra
+        : this.adapters.hilltop;
 
-		// generic signal for any ad network adapters
-		window.dispatchEvent(
-			new CustomEvent("ad-fill-request", {
-				detail: { adId },
-			})
-		);
-	}
+    const zoneId =
+      primaryAdapter.name === "hilltop" ? hilltopZone : adsterraZone;
 
-	private getState(adId: string): AdState {
-		if (!this.state.has(adId)) {
-			this.state.set(adId, {
-				lastShown: 0,
-				lastMounted: 0,
-			});
-		}
-		return this.state.get(adId)!;
-	}
+    // Try primary
+    const ok = await primaryAdapter.mount(container, zoneId);
+    if (ok) return;
 
-	public reset() {
-		this.state.clear();
-	}
+    // Try fallback
+    const fallbackZone =
+      fallbackAdapter.name === "hilltop" ? hilltopZone : adsterraZone;
+
+    const ok2 = await fallbackAdapter.mount(container, fallbackZone);
+    if (ok2) return;
+
+    // Final fallback
+    await this.adapters.fallback.mount(container, hilltopZone);
+  }
+
+  async refreshAd(container: HTMLElement, hilltopZone: string, adsterraZone: string) {
+    await this.mountAd(container, hilltopZone, adsterraZone);
+  }
 }
 
-// Singleton instance (important for SPA consistency)
 export const adController = new AdController();
