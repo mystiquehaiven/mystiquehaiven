@@ -49,9 +49,7 @@ export default function AdSlot({
 			style={{
 				minHeight: 250,
 				width: "100%",
-				display: "flex",
-				justifyContent: "center",
-				alignItems: "center"
+
 			}}
 		/>
 	);
