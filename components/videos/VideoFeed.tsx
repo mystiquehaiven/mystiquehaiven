@@ -10,6 +10,8 @@ import TagFilterModal from "./TagFilterModel";
 import BannerAdCard from "./BannerAdCard";
 import BottomStickyAd from "../BottomStickyAd";
 import MilestoneAd from "../MilestoneAd";
+import { INLINE_KEY, STICKY_KEY, MILESTONE_KEY } from "@/lib/ads/hpfZones";
+
 
 interface Video {
   id: string;
@@ -321,28 +323,16 @@ useEffect(() => {
               <div data-ad-id={item.adId}>
 
                   {!isAdmin && (
-                    <MilestoneAd
-                      adId="milestone-20"
-                      zoneId="7191297-7191301"          // Hilltop zone
-                      adsterraZone="ADSTERRA_ZONE_ID"   // your Adsterra zone
-                      isActive={activeIndex >= 20}      // milestone trigger
-                    />
+  <MilestoneAd
+  adId="milestone-20"
+  zoneId={MILESTONE_KEY}
+  isActive={activeIndex >= 20}
+/>
 
-                  )}
-
+)}
 
 
-                {item.kind === "ad" && !isAdmin ? (
-                  <div data-ad-id={item.adId}>
-                    <BannerAdCard
-                      adId={item.adId}
-                      isActive={i === activeIndex}
-                      zone250="7194069-7194073"
-                      zone100="7194081-7194085"
-                      adsterraZone="29323808"
-                    />
-                  </div>
-                ) : null}
+
 
 
               </div>
@@ -352,12 +342,8 @@ useEffect(() => {
       </div>
 
       {!isAdmin && (
-        <BottomStickyAd
-          zoneId="7194081-7194085"          // Hilltop sticky zone
-          adsterraZone="29323811"  // Your Adsterra sticky zone
-        />
-
-      )}
+  <BottomStickyAd zoneId="16d096f2de5d2eb6f5087601c407e063" />
+)}
 
 
 

@@ -4,52 +4,19 @@ import { useEffect, useRef } from "react";
 import { adController } from "../lib/adController";
 
 interface BottomStickyAdProps {
-  zoneId: string;        // Hilltop sticky zone
-  adsterraZone: string;  // Adsterra sticky zone
+  zoneId: string; // Adsterra HPF key
 }
 
-export default function BottomStickyAd({
-  zoneId,
-  adsterraZone,
-}: BottomStickyAdProps) {
+export default function BottomStickyAd({ zoneId }: BottomStickyAdProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
-  // Mount
   useEffect(() => {
     if (!containerRef.current || mountedRef.current) return;
     mountedRef.current = true;
 
-    window.dispatchEvent(
-      new CustomEvent("ad-slot-mounted", { detail: { adId: "bottom-sticky" } })
-    );
-
-    adController.mountAd(containerRef.current, zoneId, adsterraZone);
-    console.log("Zones:", zoneId, adsterraZone);
-
-  }, [zoneId, adsterraZone]);
-
-  // Visibility
-  useEffect(() => {
-    window.dispatchEvent(
-      new CustomEvent("ad-slot-visible", { detail: { adId: "bottom-sticky" } })
-    );
-  }, []);
-
-  // Refresh
-  useEffect(() => {
-    const handler = (e: CustomEvent) => {
-      if (e.detail.adId !== "bottom-sticky") return;
-
-      if (containerRef.current) {
-        adController.refreshAd(containerRef.current, zoneId, adsterraZone);
-      }
-    };
-
-    window.addEventListener("ad-fill-request", handler as EventListener);
-    return () =>
-      window.removeEventListener("ad-fill-request", handler as EventListener);
-  }, [zoneId, adsterraZone]);
+    adController.mountAd(containerRef.current, zoneId);
+  }, [zoneId]);
 
   return (
     <div
@@ -59,7 +26,8 @@ export default function BottomStickyAd({
         position: "fixed",
         bottom: 0,
         width: "100%",
-        minHeight: 90,
+        height: 50,
+        overflow: "hidden",
         background: "#000",
         zIndex: 9999,
       }}

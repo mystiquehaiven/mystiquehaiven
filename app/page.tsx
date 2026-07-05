@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import BannerAdCard from "@/components/videos/BannerAdCard";
+import { INLINE_KEY, STICKY_KEY, MILESTONE_KEY } from "@/lib/ads/hpfZones";
+
 
 const pillars = [
   {
@@ -591,6 +594,12 @@ export default function Home() {
           >
             18+ Only · All content is AI-generated synthetic media
           </span>
+          <BannerAdCard
+  adId="banner-top"
+  zoneId={INLINE_KEY}
+/>
+
+
         </footer>
       </div>
     </div>

@@ -6,6 +6,9 @@ import Navbar from "@/components/Navbar";
 import Script from "next/script"; 
 import "@/lib/AdNetworkBridge";
 import "@/lib/adController";
+import BottomStickyAd from "@/components/BottomStickyAd";
+import { INLINE_KEY, STICKY_KEY, MILESTONE_KEY } from "@/lib/ads/hpfZones";
+
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -45,7 +48,8 @@ export default function RootLayout({
 					<Navbar />
 					{children}
 				</AuthProvider>
-        
+					<BottomStickyAd zoneId={STICKY_KEY} />
+
 			</body>
 		</html>
 	);

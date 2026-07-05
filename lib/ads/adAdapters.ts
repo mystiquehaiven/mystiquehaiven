@@ -38,24 +38,21 @@ export const HilltopAdapter: AdAdapter = {
 export const AdsterraAdapter: AdAdapter = {
   name: "adsterra",
 
-  async mount(container, zoneId) {
-    return new Promise((resolve) => {
-      container.innerHTML = "";
+  mount(container, zoneId) {
+  return new Promise((resolve) => {
+    container.innerHTML = "";
 
-      const adDiv = document.createElement("div");
-      adDiv.id = zoneId; // Adsterra uses ID instead of data attribute
-      container.appendChild(adDiv);
+    const script = document.createElement("script");
+    script.src = `https://adsterra.com/${zoneId}.js`;
+    script.async = true;
 
-      const script = document.createElement("script");
-      script.src = "https://www.adsterra.com/js/adsterra.js";
-      script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
 
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
+    container.appendChild(script);
+  });
+}
 
-      container.appendChild(script);
-    });
-  },
 };
 
 
