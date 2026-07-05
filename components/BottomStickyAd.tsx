@@ -16,6 +16,7 @@ export default function BottomStickyAd({ zoneId }: BottomStickyAdProps) {
     mountedRef.current = true;
 
     adController.mountAd(containerRef.current, zoneId);
+    console.log("Zone ID Bottom Stick: ", zoneId)
   }, [zoneId]);
 
   return (
