@@ -1,355 +1,435 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+	useEffect,
+	useRef,
+	useState,
+	useCallback,
+	useMemo
+} from "react";
+
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { auth } from "@/lib/firebase";
+
+import { db, auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
-import BannerAdCard from "./BannerAdCard";
-import BottomStickyAd from "../BottomStickyAd";
-import MilestoneAd from "../MilestoneAd";
-import { INLINE_KEY, STICKY_KEY, MILESTONE_KEY } from "@/lib/ads/hpfZones";
 
+import { AD_CONFIG } from "@/lib/ads/adConfig";
+import AdSlot from "../AdSlot";
 
 interface Video {
-  id: string;
-  bunnyVideoId: string;
-  playbackUrl: string;
-  thumbnailUrl: string;
-  tags: string[];
-  createdAt: string | null;
+	id: string;
+	bunnyVideoId: string;
+	playbackUrl: string;
+	thumbnailUrl: string;
+	tags: string[];
+	createdAt: string | null;
 }
 
 interface VideoFeedProps {
-  videos: Video[];
-  tagCounts: Record<string, number>;
-  isAuthenticated: boolean
-  userId: string | null
+	videos: Video[];
+	tagCounts: Record<string, number>;
+	isAuthenticated: boolean;
+	userId: string | null;
 }
 
 type SortMode = "random" | "newest" | "oldest";
 
-// One ad slot inserted after every N videos. Tune based on RPM vs retention —
-// start conservative (e.g. 6-8) and watch session length before tightening it.
 const AD_INTERVAL = 6;
-const milestonePoints = [20, 40, 60]; // or whatever you use
 
 type FeedItem =
-  | { kind: "video"; video: Video }
-  | { kind: "ad"; adId: string };
-
-
+	| { kind: "video"; video: Video }
+	| { kind: "ad"; adId: string };
 
 function shuffleVideos<T>(arr: T[]): T[] {
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
+	const out = [...arr];
+	for (let i = out.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[out[i], out[j]] = [out[j], out[i]];
+	}
+	return out;
 }
 
-// Ad IDs are anchored to the video that precedes the slot, not to array
-// position. That way an edit/delete elsewhere in the feed doesn't relabel
-// every ad slot after it and force BannerAdCard to remount.
 function buildFeedItems(videos: Video[]): FeedItem[] {
-  const items: FeedItem[] = [];
-  videos.forEach((video, i) => {
-    items.push({ kind: "video", video });
-    const isLast = i === videos.length - 1;
-    if (!isLast && (i + 1) % AD_INTERVAL === 0) {
-      items.push({ kind: "ad", adId: `ad-after-${video.id}` });
-    }
-  });
-  return items;
+	const items: FeedItem[] = [];
+
+	videos.forEach((video, i) => {
+		items.push({ kind: "video", video });
+
+		const isLast = i === videos.length - 1;
+		if (!isLast && (i + 1) % AD_INTERVAL === 0) {
+			items.push({
+				kind: "ad",
+				adId: `ad-after-${video.id}`
+			});
+		}
+	});
+
+	return items;
 }
 
+const adRegistry = new Map<
+	string,
+	{
+		impressions: number;
+		lastImpressionAt: number;
+		status: "idle" | "loading" | "filled" | "empty";
+    viewed: boolean;
+	}
+>();
 
+function getOrCreateAdSlot(adId: string) {
+	if (!adRegistry.has(adId)) {
+		adRegistry.set(adId, {
+			impressions: 0,
+			lastImpressionAt: 0,
+			status: "idle",
+      viewed: false
+		});
+	}
 
-export default function VideoFeed({ videos: initialVideos, tagCounts }: VideoFeedProps) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const [videos, setVideos] = useState<Video[]>(initialVideos);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
-    const tagsParam = searchParams.get("tags");
-    return tagsParam ? tagsParam.split(",").filter(Boolean) : [];
-  });
-  const [sortMode, setSortMode] = useState<SortMode>("newest");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const feedListRef = useRef<HTMLDivElement>(null);
-  const didScrollToTarget = useRef(false);
+	return adRegistry.get(adId)!;
+}
 
-  // Holds the last random order we computed, keyed by the *set* of video ids
-  // it was computed from. Only recomputed when that set actually changes —
-  // not when an unrelated field (tags, etc.) on one of the videos changes.
-  // This is what stops "edit a tag" from silently reshuffling everyone's
-  // random-mode feed and desyncing ad slots / IntersectionObserver targets.
-  const shuffleOrderRef = useRef<{ key: string; order: string[] } | null>(null);
+function evaluateAdVisibility(
+	feedItems: FeedItem[],
+	range: { startIndex: number; endIndex: number }
+) {
+	const now = Date.now();
+	const rangeKey = getRangeKey(range);
 
-  
-  
+	for (let i = range.startIndex; i <= range.endIndex; i++) {
+		const item = feedItems[i];
+		if (!item || item.kind !== "ad") continue;
 
+		const adId = item.adId;
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        setIsAdmin(false);
-        setIsSubscribed(false);
-        setIsAuthenticated(false);
-        return;
-      }
-      setIsAuthenticated(true);
-      const token = await user.getIdTokenResult();
-      setIsAdmin(token.claims.admin === true);
+		const slot = getOrCreateAdSlot(adId);
 
-      const userSnap = await getDoc(doc(db, "users", user.uid));
-      const sub = userSnap.data()?.subscription as { status?: string; tier?: string } | undefined;
-      setIsSubscribed(sub?.status === "active");
-    });
-    return unsubscribe;
-  }, []);
+		const guard = adRequestGuard.get(adId);
 
-  const handleDelete = useCallback((videoId: string) => {
-    setVideos((prev) => prev.filter((v) => v.id !== videoId));
-  }, []);
+		// -----------------------------
+		// 1. RANGE DEDUPE (core fix)
+		// -----------------------------
+		if (guard?.lastRangeKey === rangeKey) {
+			continue; // already evaluated in this viewport window
+		}
 
-  const handleTagsUpdate = useCallback((videoId: string, tags: string[]) => {
-    setVideos((prev) => prev.map((v) => (v.id === videoId ? { ...v, tags } : v)));
-  }, []);
+		// -----------------------------
+		// 2. COOLDOWN (CPM protection)
+		// -----------------------------
+		const COOLDOWN = 60_000;
+		if (now - slot.lastImpressionAt < COOLDOWN) continue;
 
-  const displayVideos = useMemo(() => {
-    const filtered =
-      selectedTags.length > 0
-        ? videos.filter((v) => {
-            const videoTagsLower = v.tags.map((t) => t.toLowerCase());
-            return selectedTags.every((t) => videoTagsLower.includes(t.toLowerCase()));
-          })
-        : videos;
+		// -----------------------------
+		// 3. NETWORK IN FLIGHT GUARD
+		// -----------------------------
+		if (slot.status === "loading") continue;
 
-    if (sortMode === "newest") {
-      return [...filtered].sort(
-        (a, b) =>
-          new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
-      );
-    }
-    if (sortMode === "oldest") {
-      return [...filtered].sort(
-        (a, b) =>
-          new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
-      );
-    }
+		// -----------------------------
+		// UPDATE GUARD IMMEDIATELY (prevents double triggers in same frame)
+		// -----------------------------
+		adRequestGuard.set(adId, {
+			lastRequestedAt: now,
+			lastRangeKey: rangeKey
+		});
 
-    // random — only reshuffle when the underlying id set changes (filter
-    // applied/cleared, video added/removed). A tag edit on an existing
-    // video doesn't change this key, so order is preserved across it.
-    const idKey = filtered
-      .map((v) => v.id)
-      .sort()
-      .join(",");
+		triggerAdFill(adId, slot);
+	}
+}
 
-    if (!shuffleOrderRef.current || shuffleOrderRef.current.key !== idKey) {
-      shuffleOrderRef.current = {
-        key: idKey,
-        order: shuffleVideos(filtered).map((v) => v.id),
-      };
-    }
+async function triggerAdFill(adId: string, slot: any) {
+	slot.status = "loading";
 
-    const byId = new Map(filtered.map((v) => [v.id, v]));
-    return shuffleOrderRef.current.order
-      .map((id) => byId.get(id))
-      .filter((v): v is Video => Boolean(v));
-  }, [videos, selectedTags, sortMode]);
+	try {
+		// later: real ad request logic here (NOT impressions)
 
-  // Combined video+ad list — everything below (refs, observer, keyboard nav)
-  // indexes against THIS array, not displayVideos, so ad slots don't desync
-  // scroll/active-state tracking.
-  const feedItems = useMemo(() => buildFeedItems(displayVideos), [displayVideos]);
+		slot.status = "filled";
+	} catch {
+		slot.status = "empty";
+	}
+}
 
-useEffect(() => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
+const adRequestGuard = new Map<
+	string,
+	{
+		lastRequestedAt: number;
+		lastRangeKey: string;
+	}
+>();
 
-        const el = entry.target as HTMLElement;
-        const adId = el.getAttribute("data-ad-id");
+function getRangeKey(range: { startIndex: number; endIndex: number }) {
+	return `${range.startIndex}-${range.endIndex}`;
+}
 
-        if (!adId) return;
+export default function VideoFeed({
+	videos: initialVideos,
+	tagCounts
+}: VideoFeedProps) {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
 
-        window.dispatchEvent(
-          new CustomEvent("ad-slot-visible", {
-            detail: { adId },
-          })
-        );
-      });
-    },
-    {
-      root: feedListRef.current,
-      threshold: 0.5,
-      rootMargin: "200px",
-    }
-  );
+	const virtuosoRef = useRef<VirtuosoHandle>(null);
 
-  const nodes = document.querySelectorAll("[data-ad-id]");
-  nodes.forEach((n) => observer.observe(n));
+	const [videos, setVideos] = useState<Video[]>(initialVideos);
+	const [activeIndex, setActiveIndex] = useState(0);
 
-  return () => observer.disconnect();
+	const [isAdmin, setIsAdmin] = useState(false);
+	const [isSubscribed, setIsSubscribed] = useState(false);
+	const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+	const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+		const tagsParam = searchParams.get("tags");
+		return tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+	});
+
+	const [sortMode, setSortMode] = useState<SortMode>("newest");
+	const [isMuted, setIsMuted] = useState(true);
+	const [filterModalOpen, setFilterModalOpen] = useState(false);
+
+	const shuffleOrderRef = useRef<{
+		key: string;
+		order: string[];
+	} | null>(null);
+
+	// ---------------- AUTH ----------------
+	useEffect(() => {
+		const unsubscribe = auth.onAuthStateChanged(async (user) => {
+			if (!user) {
+				setIsAdmin(false);
+				setIsSubscribed(false);
+				setIsAuthenticated(false);
+				return;
+			}
+
+			setIsAuthenticated(true);
+
+			const token = await user.getIdTokenResult();
+			setIsAdmin(token.claims.admin === true);
+
+			const userSnap = await getDoc(doc(db, "users", user.uid));
+			const sub = userSnap.data()?.subscription;
+
+			setIsSubscribed(sub?.status === "active");
+		});
+
+		return unsubscribe;
+	}, []);
+
+	// ---------------- CRUD ----------------
+	const handleDelete = useCallback((videoId: string) => {
+		setVideos((prev) => prev.filter((v) => v.id !== videoId));
+	}, []);
+
+	const handleTagsUpdate = useCallback(
+		(videoId: string, tags: string[]) => {
+			setVideos((prev) =>
+				prev.map((v) => (v.id === videoId ? { ...v, tags } : v))
+			);
+		},
+		[]
+	);
+
+	// ---------------- FILTER + SORT ----------------
+	const displayVideos = useMemo(() => {
+		const filtered =
+			selectedTags.length > 0
+				? videos.filter((v) =>
+						selectedTags.every((t) =>
+							v.tags.map((x) => x.toLowerCase()).includes(t.toLowerCase())
+						)
+					)
+				: videos;
+
+		if (sortMode === "newest") {
+			return [...filtered].sort(
+				(a, b) =>
+					new Date(b.createdAt ?? 0).getTime() -
+					new Date(a.createdAt ?? 0).getTime()
+			);
+		}
+
+		if (sortMode === "oldest") {
+			return [...filtered].sort(
+				(a, b) =>
+					new Date(a.createdAt ?? 0).getTime() -
+					new Date(b.createdAt ?? 0).getTime()
+			);
+		}
+
+		// random stable shuffle
+		const idKey = filtered.map((v) => v.id).sort().join(",");
+
+		if (
+			!shuffleOrderRef.current ||
+			shuffleOrderRef.current.key !== idKey
+		) {
+			shuffleOrderRef.current = {
+				key: idKey,
+				order: shuffleVideos(filtered).map((v) => v.id)
+			};
+		}
+
+		const byId = new Map(filtered.map((v) => [v.id, v]));
+		return shuffleOrderRef.current.order
+			.map((id) => byId.get(id))
+			.filter(Boolean) as Video[];
+	}, [videos, selectedTags, sortMode]);
+
+	const feedItems = useMemo(
+		() => buildFeedItems(displayVideos),
+		[displayVideos]
+	);
+
+	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
+const handleRangeChanged = useCallback((range: any) => {
+	evaluateAdVisibility(feedItems, range);
 }, [feedItems]);
 
+	// ---------------- KEYBOARD NAV ----------------
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (!virtuosoRef.current) return;
 
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				const next = Math.min(
+					activeIndex + 1,
+					feedItems.length - 1
+				);
+				virtuosoRef.current.scrollToIndex({
+					index: next,
+					behavior: "smooth"
+				});
+				setActiveIndex(next);
+			}
 
-  useEffect(() => {
-    const targetId = searchParams.get("v");
-    if (!targetId || didScrollToTarget.current || feedItems.length === 0) return;
-    const index = feedItems.findIndex(
-      (item) => item.kind === "video" && item.video.id === targetId
-    );
-    if (index === -1) return;
-    didScrollToTarget.current = true;
-    setActiveIndex(index);
-    requestAnimationFrame(() => {
-      cardRefs.current[index]?.scrollIntoView({ behavior: "instant" });
-    });
-  }, [feedItems, searchParams]);
+			if (e.key === "ArrowUp") {
+				e.preventDefault();
+				const prev = Math.max(activeIndex - 1, 0);
+				virtuosoRef.current.scrollToIndex({
+					index: prev,
+					behavior: "smooth"
+				});
+				setActiveIndex(prev);
+			}
+		};
 
-  useEffect(() => {
-    cardRefs.current = cardRefs.current.slice(0, feedItems.length);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = cardRefs.current.indexOf(entry.target as HTMLDivElement);
-            if (index !== -1) setActiveIndex(index);
-          }
-        });
-      },
-      { root: feedListRef.current, threshold: 0.8 }
-    );
-    cardRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [feedItems.map((item) => (item.kind === "video" ? item.video.id : item.adId)).join(",")]);
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [activeIndex, feedItems.length]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const next = Math.min(activeIndex + 1, feedItems.length - 1);
-        cardRefs.current[next]?.scrollIntoView({ behavior: "smooth" });
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        const prev = Math.max(activeIndex - 1, 0);
-        cardRefs.current[prev]?.scrollIntoView({ behavior: "smooth" });
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, feedItems.length]);
+	// ---------------- URL SCROLL TARGET ----------------
+	useEffect(() => {
+		const targetId = searchParams.get("v");
+		if (!targetId) return;
 
-  const handleApplyTags = useCallback(
-    (tags: string[], sort: SortMode) => {
-      setSelectedTags(tags);
-      setSortMode(sort);
-      setActiveIndex(0);
-      if (feedListRef.current) {
-        feedListRef.current.scrollTo({ top: 0, behavior: "smooth" });
-      }
+		const index = feedItems.findIndex(
+			(i) => i.kind === "video" && i.video.id === targetId
+		);
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (tags.length > 0) {
-        params.set("tags", tags.join(","));
-      } else {
-        params.delete("tags");
-      }
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    },
-    [pathname, router, searchParams]
-  );
+		if (index === -1) return;
 
+		setActiveIndex(index);
 
+		virtuosoRef.current?.scrollToIndex({
+			index,
+			behavior: "auto"
+		});
+	}, [feedItems, searchParams]);
 
-  return (
-    <div className="feed-container">
-      <TagFilterModal
-        isOpen={filterModalOpen}
-        onClose={() => setFilterModalOpen(false)}
-        selectedTags={selectedTags}
-        sortMode={sortMode}
-        tagCounts={tagCounts}
-        onApply={handleApplyTags}
-      />
+	// ---------------- TAG APPLY ----------------
+	const handleApplyTags = useCallback(
+		(tags: string[], sort: SortMode) => {
+			setSelectedTags(tags);
+			setSortMode(sort);
+			setActiveIndex(0);
 
-      <div
-        className="feed-list"
-        ref={feedListRef}
-        key={`${selectedTags.join(",")}-${sortMode}`}
-      >
-        {feedItems.map((item, i) => (
-          <div
-            key={item.kind === "video" ? item.video.id : item.adId}
-            ref={(el) => {
-              cardRefs.current[i] = el;
-            }}
-            className="feed-item"
-          >
-            {item.kind === "video" ? (
-              <VideoCard
-                videoId={item.video.id}
-                playbackUrl={item.video.playbackUrl}
-                thumbnailUrl={item.video.thumbnailUrl}
-                tags={item.video.tags}
-                isActive={Math.abs(i - activeIndex) <= 1}
-                isNear={i === activeIndex || i === activeIndex + 1}
-                isMuted={isMuted}
-                onMuteToggle={() => setIsMuted((m) => !m)}
-                onOpenFilter={() => setFilterModalOpen(true)}
-                hasActiveFilters={selectedTags.length > 0}
-                isAdmin={isAdmin}
-                isSubscribed={isSubscribed}
-                isAuthenticated={isAuthenticated}
-                onDelete={handleDelete}
-                onTagsUpdate={handleTagsUpdate}
-              />
-            ) : (
-              <div data-ad-id={item.adId}>
+			virtuosoRef.current?.scrollToIndex({
+				index: 0,
+				behavior: "smooth"
+			});
 
-                  {!isAdmin && (
-  <MilestoneAd
-  adId="milestone-20"
-  zoneId={MILESTONE_KEY}
-  isActive={activeIndex >= 20}
-/>
+			const params = new URLSearchParams(searchParams.toString());
 
-)}
+			if (tags.length) params.set("tags", tags.join(","));
+			else params.delete("tags");
 
+			router.replace(
+				params.toString()
+					? `${pathname}?${params}`
+					: pathname,
+				{ scroll: false }
+			);
+		},
+		[pathname, router, searchParams]
+	);
 
+	// ---------------- RENDER ----------------
+	return (
+		<div className="feed-container">
+			<TagFilterModal
+				isOpen={filterModalOpen}
+				onClose={() => setFilterModalOpen(false)}
+				selectedTags={selectedTags}
+				sortMode={sortMode}
+				tagCounts={tagCounts}
+				onApply={handleApplyTags}
+			/>
 
+			<Virtuoso
+				ref={virtuosoRef}
+				data={feedItems}
+				useWindowScroll
+				rangeChanged={handleRangeChanged}
+				itemContent={(index, item: FeedItem) => {
+if (item.kind === "ad") {
+	return (
+		<AdSlot
+			adId={item.adId}
+			onImpression={(adId) => {
+				const slot = getOrCreateAdSlot(adId);
 
+				slot.impressions += 1;
+				slot.lastImpressionAt = Date.now();
+				slot.viewed = true;
 
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+				window.dispatchEvent(
+					new CustomEvent("ad-impression", {
+						detail: { adId }
+					})
+				);
+			}}
+		/>
+	);
+}
 
-      {!isAdmin && (
-  <BottomStickyAd zoneId="16d096f2de5d2eb6f5087601c407e063" />
-)}
+					const isActive = Math.abs(index - activeIndex) <= 1;
 
-
-
-      {selectedTags.length > 0 && displayVideos.length === 0 && (
-        <div className="feed-empty">no matches — showing all</div>
-      )}
-    </div>
-  );
+					return (
+						<VideoCard
+							videoId={item.video.id}
+							playbackUrl={item.video.playbackUrl}
+							thumbnailUrl={item.video.thumbnailUrl}
+							tags={item.video.tags}
+							isActive={isActive}
+							isNear={index === activeIndex}
+							isMuted={isMuted}
+							onMuteToggle={() => setIsMuted((m) => !m)}
+							onOpenFilter={() => setFilterModalOpen(true)}
+							hasActiveFilters={selectedTags.length > 0}
+							isAdmin={isAdmin}
+							isSubscribed={isSubscribed}
+							isAuthenticated={isAuthenticated}
+							onDelete={handleDelete}
+							onTagsUpdate={handleTagsUpdate}
+						/>
+					);
+				}}
+			/>
+		</div>
+	);
 }
