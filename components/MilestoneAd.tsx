@@ -29,6 +29,7 @@ export default function MilestoneAd({
     );
 
     adController.mountAd(containerRef.current, zoneId, adsterraZone);
+    console.log("Zones:", zoneId, adsterraZone);
   }, [adId, zoneId, adsterraZone, isActive]);
 
   // Visibility

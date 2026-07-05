@@ -38,6 +38,7 @@ export default function BannerAdCard({
     );
 
     adController.mountAd(containerRef.current, zoneId, adsterraZone);
+    console.log("Zones:", zoneId, adsterraZone);
   }, [zoneId, adId, adsterraZone]);
 
   // Visibility event
@@ -62,6 +63,8 @@ export default function BannerAdCard({
     window.addEventListener("ad-fill-request", handler as EventListener);
     return () =>
       window.removeEventListener("ad-fill-request", handler as EventListener);
+    
+
   }, [adId, zoneId, adsterraZone]);
 
   return (
