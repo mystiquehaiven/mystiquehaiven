@@ -454,7 +454,7 @@ return (
 						Math.abs(index - activeIndex) <= 1;
 
 					return (
-	<div style={{ width: "100%", height: "100dvh", scrollSnapAlign: "start", }}>
+	<div style={{ width: "100%", height: "100svh", scrollSnapAlign: "start", }}>
 		<VideoCard
 			videoId={item.video.id}
 			playbackUrl={item.video.playbackUrl}
