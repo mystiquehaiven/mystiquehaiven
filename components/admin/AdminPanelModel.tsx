@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { PREDEFINED_TAGS } from "@/components/admin/UploadForm";
-import styles from "./AdminPanelModal.module.css";
+import styles from "../../app/styles/AdminPanelModal.module.css";
 
 
 interface Props {
