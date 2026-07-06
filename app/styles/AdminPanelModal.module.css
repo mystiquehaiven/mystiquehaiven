@@ -57,10 +57,14 @@
 
 .deleteButton {
     border: 1px solid #f61717;
+    border-radius: 8px;
+    padding: 24px;
     background: #f35757;
 }
 
 .saveButton {
     border: 1px solid #abb990;
+    border-radius: 8px;
+    padding: 24px;
     background: #6ba965;
 }
