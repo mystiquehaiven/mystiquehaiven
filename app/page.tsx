@@ -19,7 +19,7 @@ const pillars = [
 ];
 
 const topLinks = [
-  { label: "Anime", href: "/videos?tags=anime", image: "/images/anime.jpg" },
+  { label: "Anime", href: "/videos?tags=anime", image: "/images/anime.jpeg" },
   { label: "Realistic", href: "/videos?tags=realistic", image: "/images/realistic.jpg" },
   { label: "Characters", href: "/characters", image: "images/characters.jpg" },
 ];

@@ -54,3 +54,13 @@
 	gap: 12px;
 	justify-content: flex-end;
 }
+
+.deleteButton {
+    border: #f61717;
+    background-color: #f35757;
+}
+
+.saveButton {
+    border: #abb990;
+    background-color: #6ba965;
+}
