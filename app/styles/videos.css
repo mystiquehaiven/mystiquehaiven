@@ -7,7 +7,7 @@
 	height: 100dvh;
 	width: 100vw;
 	overflow: hidden;
-	position: relative;
+	position: fixed;
 }
 
 .feed-list {
@@ -17,6 +17,19 @@
 
 .feed-item {
 	width: 100%;
+}
+
+.overlay {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease;
+}
+
+.overlay.active {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 

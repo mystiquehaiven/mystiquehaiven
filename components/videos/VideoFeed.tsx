@@ -30,6 +30,7 @@ interface Video {
 
 interface VideoFeedProps {
 	videos: Video[];
+  
 	tagCounts: Record<string, number>;
 	isAuthenticated: boolean;
 	userId: string | null;
@@ -190,11 +191,19 @@ export default function VideoFeed({
 	const [sortMode, setSortMode] = useState<SortMode>("newest");
 	const [isMuted, setIsMuted] = useState(true);
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
 
 	const shuffleOrderRef = useRef<{
 		key: string;
 		order: string[];
 	} | null>(null);
+
+  useEffect(() => {
+	if (typeof window === "undefined") return;
+
+	window.history.scrollRestoration = "manual";
+}, []);
 
 	// ---------------- AUTH ----------------
 	useEffect(() => {
@@ -390,76 +399,78 @@ useEffect(() => {
 	);
 
 	// ---------------- RENDER ----------------
-	return (
-		<div className="feed-container">
-			<TagFilterModal
-				isOpen={filterModalOpen}
-				onClose={() => setFilterModalOpen(false)}
-				selectedTags={selectedTags}
-				sortMode={sortMode}
-				tagCounts={tagCounts}
-				onApply={handleApplyTags}
+return (
+	<div className="feed-container">
+
+		{/* GLOBAL MODAL LAYER (DO NOT MOVE INSIDE VIRTUOSO) */}
+		<TagFilterModal
+			isOpen={filterModalOpen}
+			onClose={() => setFilterModalOpen(false)}
+			selectedTags={selectedTags}
+			sortMode={sortMode}
+			tagCounts={tagCounts}
+			onApply={handleApplyTags}
+		/>
+
+		{/* VIEWPORT WRAPPER */}
+		<div className="feed-viewport">
+
+			<Virtuoso
+				ref={virtuosoRef}
+				data={feedItems}
+				rangeChanged={handleRangeChanged}
+				style={{ height: "100%", width: "100%" }}
+
+				itemContent={(index, item: FeedItem) => {
+
+					/* ---------------- ADS ---------------- */
+					if (item.kind === "ad") {
+						return (
+							<div style={{ width: "100%", height: "250px" }}>
+								<AdSlot
+									adId={item.adId}
+									onImpression={(adId) => {
+										const slot = getOrCreateAdSlot(adId);
+
+										slot.impressions += 1;
+										slot.lastImpressionAt = Date.now();
+										slot.viewed = true;
+
+										window.dispatchEvent(
+											new CustomEvent("ad-impression", {
+												detail: { adId }
+											})
+										);
+									}}
+								/>
+							</div>
+						);
+					}
+
+					/* ---------------- VIDEO ---------------- */
+					const isActive =
+						Math.abs(index - activeIndex) <= 1;
+
+					return (
+						<VideoCard
+							videoId={item.video.id}
+							playbackUrl={item.video.playbackUrl}
+							thumbnailUrl={item.video.thumbnailUrl}
+							tags={item.video.tags}
+							isActive={isActive}
+							isNear={index === activeIndex}
+							isMuted={isMuted}
+							onMuteToggle={() => setIsMuted((m) => !m)}
+							onOpenFilters={() => setFilterModalOpen(true)}
+							hasActiveFilters={selectedTags.length > 0}
+							isAdmin={isAdmin}
+							isAuthenticated={isAuthenticated}
+						/>
+					);
+				}}
 			/>
 
-    
-<div className="feed-viewport">
-	<Virtuoso
-		ref={virtuosoRef}
-		data={feedItems}
-		rangeChanged={handleRangeChanged}
-		style={{ height: "100%", width: "100%" }}
-		itemContent={(index, item: FeedItem) => {
-			if (item.kind === "ad") {
-				return (
-					<div style={{ height: 250, width: "100%" }}>
-						<AdSlot
-							adId={item.adId}
-							onImpression={(adId) => {
-								const slot = getOrCreateAdSlot(adId);
-
-								slot.impressions += 1;
-								slot.lastImpressionAt = Date.now();
-								slot.viewed = true;
-
-								window.dispatchEvent(
-									new CustomEvent("ad-impression", {
-										detail: { adId }
-									})
-								);
-							}}
-						/>
-					</div>
-				);
-			}
-
-			const isActive = Math.abs(index - activeIndex) <= 1;
-
-			return (
-				<div style={{ height: "100vh", width: "100%" }}>
-					<VideoCard
-						videoId={item.video.id}
-						playbackUrl={item.video.playbackUrl}
-						thumbnailUrl={item.video.thumbnailUrl}
-						tags={item.video.tags}
-						isActive={isActive}
-						isNear={index === activeIndex}
-						isMuted={isMuted}
-						onMuteToggle={() => setIsMuted((m) => !m)}
-						onOpenFilter={() => setFilterModalOpen(true)}
-						hasActiveFilters={selectedTags.length > 0}
-						isAdmin={isAdmin}
-						isSubscribed={isSubscribed}
-						isAuthenticated={isAuthenticated}
-						onDelete={handleDelete}
-						onTagsUpdate={handleTagsUpdate}
-					/>
-				</div>
-			);
-		}}
-	/>
-</div>
-      
-
 		</div>
-	);
+	</div>
+);
 }
