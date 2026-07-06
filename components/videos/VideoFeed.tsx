@@ -415,7 +415,10 @@ return (
 					/* ---------------- ADS ---------------- */
 					if (item.kind === "ad") {
 						return (
-		          <div style={{ width: "100%", height: "250px", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+		          <div style={{ width: "100%", 
+                            height: "250px", 
+                            scrollSnapAlign: "start", 
+                            contain: "layout size", }}>
 								<AdSlot
 									adId={item.adId}
 									onImpression={(adId) => {
