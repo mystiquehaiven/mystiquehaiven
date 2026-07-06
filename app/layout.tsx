@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Script from "next/script"; 
+import { Analytics } from "@vercel/analytics/next";
 
 
 
@@ -52,7 +53,7 @@ export default function RootLayout({
 					<Navbar />
 					{children}
 				</AuthProvider>
-					
+				<Analytics/>
 
 			</body>
 		</html>
