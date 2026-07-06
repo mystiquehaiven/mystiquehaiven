@@ -297,19 +297,7 @@ export default function VideoFeed({
 	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
 const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
 	evaluateAdVisibility(feedItems, range);
-
 	setActiveIndex(range.startIndex);
-
-	if (scrollTimeout.current) {
-		clearTimeout(scrollTimeout.current);
-	}
-
-	scrollTimeout.current = setTimeout(() => {
-		virtuosoRef.current?.scrollToIndex({
-			index: range.startIndex,
-			behavior: "smooth"
-		});
-	}, 120);
 }, [feedItems]);
 
 	// ---------------- KEYBOARD NAV ----------------
@@ -416,17 +404,18 @@ return (
 		<div className="feed-viewport">
 
 			<Virtuoso
+        //overscan={{ main: 2, reverse: 2 }}
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
 				style={{ height: "100%", width: "100%" }}
-
+        className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
 
 					/* ---------------- ADS ---------------- */
 					if (item.kind === "ad") {
 						return (
-							<div style={{ width: "100%", height: "250px" }}>
+		          <div style={{ width: "100%", height: "250px", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
 								<AdSlot
 									adId={item.adId}
 									onImpression={(adId) => {
@@ -452,7 +441,7 @@ return (
 						Math.abs(index - activeIndex) <= 1;
 
 					return (
-	<div style={{ width: "100%", height: "100dvh" }}>
+	<div style={{ width: "100%", height: "100dvh", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
 		<VideoCard
 			videoId={item.video.id}
 			playbackUrl={item.video.playbackUrl}

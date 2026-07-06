@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
+import { Volume2, VolumeX, Share2, Filter, Heart, Settings } from "lucide-react";
 
 interface Props {
 	videoId: string;
@@ -43,7 +44,6 @@ export default function VideoCard({
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const hlsRef = useRef<Hls | null>(null);
 
-	// HLS lifecycle ONLY (no UI logic here)
 	useEffect(() => {
 		const video = videoRef.current;
 		if (!video) return;
@@ -80,41 +80,42 @@ export default function VideoCard({
 		};
 	}, [isActive, isNear, playbackUrl]);
 
-return (
-	<div className="video-card">
-		<video
-			ref={videoRef}
-			className="video"
-			poster={thumbnailUrl}
-			muted={isMuted}
-			loop
-			playsInline
-		/>
+	return (
+		<div className="video-card">
+			<video
+				ref={videoRef}
+				className="video"
+				poster={thumbnailUrl}
+				muted={isMuted}
+				loop
+				playsInline
+			/>
 
-		{/* ALWAYS render overlay — never conditionally mount/unmount */}
-		<div className={`overlay ${isActive ? "active" : ""}`}>
-			<button onClick={onMuteToggle}>
-				{isMuted ? "Unmute" : "Mute"}
+{isNear && (
+	<div className={`overlay ${isNear ? "visible" : ""}`}>
+		<button className="control-btn" onClick={onMuteToggle} aria-label={isMuted ? "Unmute" : "Mute"}>
+			{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+		</button>
+
+		<button className="control-btn" onClick={onShare} aria-label="Share">
+			<Share2 size={20} />
+		</button>
+
+		<button className="control-btn" onClick={onOpenFilters} aria-label="Filter tags">
+			<Filter size={20} />
+		</button>
+
+		<button className="control-btn" onClick={onFavorite} aria-label={isFavorited ? "Unfavorite" : "Favorite"}>
+			<Heart size={20} fill={isFavorited ? "currentColor" : "none"} />
+		</button>
+
+		{isAdmin && (
+			<button className="control-btn" onClick={onOpenAdmin} aria-label="Admin panel">
+				<Settings size={20} />
 			</button>
-
-			<button onClick={onShare}>
-				Share
-			</button>
-
-			<button onClick={onOpenFilters}>
-				Filter
-			</button>
-
-			<button onClick={onFavorite}>
-				{isFavorited ? "♥" : "♡"}
-			</button>
-
-			{isAdmin && (
-				<button onClick={onOpenAdmin}>
-					Admin
-				</button>
-			)}
-		</div>
+		)}
 	</div>
-);
+)}
+		</div>
+	);
 }
