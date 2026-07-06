@@ -21,9 +21,11 @@ interface Props {
 	onOpenFilters?: () => void;
 	onShare?: () => void;
 	onFavorite?: () => void;
+  
 
 	isFavorited?: boolean;
 	isAdmin?: boolean;
+  
 }
 
 export default function VideoCard({

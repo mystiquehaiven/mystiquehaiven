@@ -10,8 +10,8 @@ import {
 
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-
+import { doc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import AdminPanelModal from "../admin/AdminPanelModel";
 import { db, auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
@@ -169,6 +169,7 @@ export default function VideoFeed({
 	videos: initialVideos,
 	tagCounts
 }: VideoFeedProps) {
+  const activeIndexRef = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 	const searchParams = useSearchParams();
 	const router = useRouter();
@@ -193,11 +194,32 @@ export default function VideoFeed({
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [favoritedIds, setFavoritedIds] = useState<string[]>([]);
+  const [adminTags, setAdminTags] = useState<string[]>([]);
+  const [isSavingTags, setIsSavingTags] = useState(false);
+  const [isDeletingVideo, setIsDeletingVideo] = useState(false);
 
 	const shuffleOrderRef = useRef<{
 		key: string;
 		order: string[];
 	} | null>(null);
+
+  const isNavigatingRef = useRef(false);
+  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+const navigateToIndex = useCallback((index: number, behavior: "auto" | "smooth" = "auto") => {
+	if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current);
+
+	isNavigatingRef.current = true;
+	activeIndexRef.current = index; // sync immediately, don't wait for the effect
+	setActiveIndex(index);
+
+	virtuosoRef.current?.scrollToIndex({ index, behavior });
+
+	navigationTimeoutRef.current = setTimeout(() => {
+		isNavigatingRef.current = false;
+	}, 300);
+}, []);
 
   useEffect(() => {
 	if (typeof window === "undefined") return;
@@ -205,29 +227,34 @@ export default function VideoFeed({
 	window.history.scrollRestoration = "manual";
 }, []);
 
+useEffect(() => {
+	activeIndexRef.current = activeIndex;
+}, [activeIndex]);
+
 	// ---------------- AUTH ----------------
-	useEffect(() => {
-		const unsubscribe = auth.onAuthStateChanged(async (user) => {
-			if (!user) {
-				setIsAdmin(false);
-				setIsSubscribed(false);
-				setIsAuthenticated(false);
-				return;
-			}
+useEffect(() => {
+	const unsubscribe = auth.onAuthStateChanged(async (user) => {
+		if (!user) {
+			setIsAdmin(false);
+			setIsSubscribed(false);
+			setIsAuthenticated(false);
+			return;
+		}
 
-			setIsAuthenticated(true);
+		setIsAuthenticated(true);
 
-			const token = await user.getIdTokenResult();
-			setIsAdmin(token.claims.admin === true);
+		const token = await user.getIdTokenResult();
+		setIsAdmin(token.claims.admin === true);
 
-			const userSnap = await getDoc(doc(db, "users", user.uid));
-			const sub = userSnap.data()?.subscription;
+		const userSnap = await getDoc(doc(db, "users", user.uid));
+		const userData = userSnap.data();
 
-			setIsSubscribed(sub?.status === "active");
-		});
+		setIsSubscribed(userData?.subscription?.status === "active");
+		setFavoritedIds(userData?.favorites ?? []);
+	});
 
-		return unsubscribe;
-	}, []);
+	return unsubscribe;
+}, []);
 
 	// ---------------- CRUD ----------------
 	const handleDelete = useCallback((videoId: string) => {
@@ -242,6 +269,61 @@ export default function VideoFeed({
 		},
 		[]
 	);
+
+  const handleFavoriteToggle = useCallback(async (videoId: string) => {
+	const user = auth.currentUser;
+	if (!user) return;
+
+	const isFav = favoritedIds.includes(videoId);
+	setFavoritedIds((prev) =>
+		isFav ? prev.filter((id) => id !== videoId) : [...prev, videoId]
+	);
+
+	try {
+		await updateDoc(doc(db, "users", user.uid), {
+			favorites: isFav ? arrayRemove(videoId) : arrayUnion(videoId),
+		});
+	} catch (err) {
+		console.error("Failed to update favorite:", err);
+		setFavoritedIds((prev) =>
+			isFav ? [...prev, videoId] : prev.filter((id) => id !== videoId)
+		);
+	}
+}, [favoritedIds]);
+
+const handleToggleAdminTag = useCallback((tag: string) => {
+	setAdminTags((prev) =>
+		prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+	);
+}, []);
+
+const handleSaveTags = useCallback(async () => {
+	if (!selectedVideoId) return;
+	setIsSavingTags(true);
+	try {
+		await updateDoc(doc(db, "videos", selectedVideoId), { tags: adminTags });
+		handleTagsUpdate(selectedVideoId, adminTags);
+		setAdminModalOpen(false);
+	} catch (err) {
+		console.error("Failed to save tags:", err);
+	} finally {
+		setIsSavingTags(false);
+	}
+}, [selectedVideoId, adminTags, handleTagsUpdate]);
+
+const handleDeleteVideo = useCallback(async () => {
+	if (!selectedVideoId) return;
+	setIsDeletingVideo(true);
+	try {
+		await deleteDoc(doc(db, "videos", selectedVideoId));
+		handleDelete(selectedVideoId);
+		setAdminModalOpen(false);
+	} catch (err) {
+		console.error("Failed to delete video:", err);
+	} finally {
+		setIsDeletingVideo(false);
+	}
+}, [selectedVideoId, handleDelete]);
 
 	// ---------------- FILTER + SORT ----------------
 	const displayVideos = useMemo(() => {
@@ -297,6 +379,7 @@ export default function VideoFeed({
 	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
 const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
 	evaluateAdVisibility(feedItems, range);
+	if (isNavigatingRef.current) return; // don't let scroll-driven sync fight a programmatic nav
 	setActiveIndex(range.startIndex);
 }, [feedItems]);
 
@@ -306,39 +389,21 @@ useEffect(() => {
 		if (!virtuosoRef.current) return;
 
 		if (e.key === "ArrowDown") {
-			e.preventDefault();
-
-			setActiveIndex((prev) => {
-				const next = Math.min(prev + 1, feedItems.length - 1);
-
-				virtuosoRef.current?.scrollToIndex({
-					index: next,
-					behavior: "auto"
-				});
-
-				return next;
-			});
+	e.preventDefault();
+	const next = Math.min(activeIndexRef.current + 1, feedItems.length - 1);
+	navigateToIndex(next);
 		}
 
 		if (e.key === "ArrowUp") {
 			e.preventDefault();
-
-			setActiveIndex((prev) => {
-				const next = Math.max(prev - 1, 0);
-
-				virtuosoRef.current?.scrollToIndex({
-					index: next,
-					behavior: "auto"
-				});
-
-				return next;
-			});
+			const next = Math.max(activeIndexRef.current - 1, 0);
+			navigateToIndex(next);
 		}
 	};
 
 	window.addEventListener("keydown", onKeyDown);
 	return () => window.removeEventListener("keydown", onKeyDown);
-}, [feedItems.length]);
+}, [feedItems.length, navigateToIndex]);
 
 	// ---------------- URL SCROLL TARGET ----------------
 	useEffect(() => {
@@ -399,6 +464,19 @@ return (
 			tagCounts={tagCounts}
 			onApply={handleApplyTags}
 		/>
+
+    <AdminPanelModal
+	    open={adminModalOpen}
+	    onClose={() => setAdminModalOpen(false)}
+	    tags={adminTags}
+	    onToggleTag={handleToggleAdminTag}
+	    onSave={handleSaveTags}
+	    onDelete={handleDeleteVideo}
+	    isSaving={isSavingTags}
+	    isDeleting={isDeletingVideo}
+	    isAdmin={isAdmin}
+    />
+
 
 		{/* VIEWPORT WRAPPER */}
 		<div className="feed-viewport">
@@ -465,6 +543,13 @@ return (
 			hasActiveFilters={selectedTags.length > 0}
 			isAdmin={isAdmin}
 			isAuthenticated={isAuthenticated}
+      onOpenAdmin={() => {
+	    setSelectedVideoId(item.video.id);
+	    setAdminTags(item.video.tags);
+	    setAdminModalOpen(true);
+        }}
+      onFavorite={() => handleFavoriteToggle(item.video.id)}
+      isFavorited={favoritedIds.includes(item.video.id)}
 		/>
 	</div>
 					);
