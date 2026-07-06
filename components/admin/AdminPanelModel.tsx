@@ -53,19 +53,15 @@ return createPortal(
 				</div>
 			</div>
 
-			<div className={styles.modalActions}>
-                <div className={styles.saveButton}>
-				<button onClick={onSave} disabled={isSaving}>
-					{isSaving ? "Saving..." : "Save"}
-				</button>
-                </div>
-                
-                <div className={styles.deleteButton}>
-				<button onClick={onDelete} disabled={isDeleting}>
-					{isDeleting ? "Deleting..." : "Delete"}
-				</button>
-                </div>
-			</div>
+<div className={styles.modalActions}>
+    <button className={styles.saveButton} onClick={onSave} disabled={isSaving}>
+        {isSaving ? "Saving..." : "Save"}
+    </button>
+
+    <button className={styles.deleteButton} onClick={onDelete} disabled={isDeleting}>
+        {isDeleting ? "Deleting..." : "Delete"}
+    </button>
+</div>
 		</div>
 	</div>,
 	document.body
