@@ -56,11 +56,11 @@
 }
 
 .deleteButton {
-    border: #f61717;
-    background-color: #f35757;
+    border: 1px solid #f61717;
+    background: #f35757;
 }
 
 .saveButton {
-    border: #abb990;
-    background-color: #6ba965;
+    border: 1px solid #abb990;
+    background: #6ba965;
 }

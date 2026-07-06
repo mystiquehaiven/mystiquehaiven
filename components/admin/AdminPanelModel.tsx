@@ -54,13 +54,17 @@ return createPortal(
 			</div>
 
 			<div className={styles.modalActions}>
+                <div className={styles.saveButton}>
 				<button onClick={onSave} disabled={isSaving}>
 					{isSaving ? "Saving..." : "Save"}
 				</button>
-
+                </div>
+                
+                <div className={styles.deleteButton}>
 				<button onClick={onDelete} disabled={isDeleting}>
 					{isDeleting ? "Deleting..." : "Delete"}
 				</button>
+                </div>
 			</div>
 		</div>
 	</div>,
