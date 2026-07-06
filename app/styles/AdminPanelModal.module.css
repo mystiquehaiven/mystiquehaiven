@@ -1,0 +1,45 @@
+.overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal {
+	background: #080808;
+	border: 1px solid #c8a97e;
+	border-radius: 8px;
+	padding: 24px;
+	max-width: 480px;
+	width: 90%;
+	max-height: 80vh;
+	overflow-y: auto;
+}
+
+.modalHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16px;
+	color: #c8a97e;
+	font-family: "Cormorant Garamond", serif;
+}
+
+.modalBody {
+	margin-bottom: 16px;
+}
+
+.tagGrid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+}
+
+.modalActions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+}

@@ -2,6 +2,8 @@
 
 import { createPortal } from "react-dom";
 import { PREDEFINED_TAGS } from "@/components/admin/UploadForm";
+import styles from "./AdminPanelModal.module.css";
+
 
 interface Props {
 	open: boolean;
@@ -28,39 +30,40 @@ export default function AdminPanelModal({
 }: Props) {
 	if (!open || !isAdmin) return null;
 
-	return createPortal(
-		<div className="modal-overlay" onClick={onClose}>
-			<div className="modal" onClick={(e) => e.stopPropagation()}>
-				<div className="modal-header">
-					<span>Edit Video</span>
-					<button onClick={onClose}>✕</button>
-				</div>
 
-				<div className="modal-body">
-					<div className="tag-grid">
-						{PREDEFINED_TAGS.map((tag) => (
-							<button
-								key={tag}
-								className={tags.includes(tag) ? "active" : ""}
-								onClick={() => onToggleTag(tag)}
-							>
-								{tag}
-							</button>
-						))}
-					</div>
-				</div>
+return createPortal(
+	<div className={styles.overlay} onClick={onClose}>
+		<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+			<div className={styles.modalHeader}>
+				<span>Edit Video</span>
+				<button onClick={onClose}>✕</button>
+			</div>
 
-				<div className="modal-actions">
-					<button onClick={onSave} disabled={isSaving}>
-						{isSaving ? "Saving..." : "Save"}
-					</button>
-
-					<button onClick={onDelete} disabled={isDeleting}>
-						{isDeleting ? "Deleting..." : "Delete"}
-					</button>
+			<div className={styles.modalBody}>
+				<div className={styles.tagGrid}>
+					{PREDEFINED_TAGS.map((tag) => (
+						<button
+							key={tag}
+							className={tags.includes(tag) ? styles.active : ""}
+							onClick={() => onToggleTag(tag)}
+						>
+							{tag}
+						</button>
+					))}
 				</div>
 			</div>
-		</div>,
-		document.body
-	);
+
+			<div className={styles.modalActions}>
+				<button onClick={onSave} disabled={isSaving}>
+					{isSaving ? "Saving..." : "Save"}
+				</button>
+
+				<button onClick={onDelete} disabled={isDeleting}>
+					{isDeleting ? "Deleting..." : "Delete"}
+				</button>
+			</div>
+		</div>
+	</div>,
+	document.body
+);
 }
