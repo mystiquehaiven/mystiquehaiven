@@ -419,6 +419,15 @@ return (
                             height: "250px", 
                             scrollSnapAlign: "start", 
                             contain: "layout size", }}>
+
+              <div
+				        style={{
+					        width: "100%",
+					        height: 250,
+					        overflow: "hidden",
+					        contain: "layout size",
+				        }}
+			        >
 								<AdSlot
 									adId={item.adId}
 									onImpression={(adId) => {
@@ -436,6 +445,7 @@ return (
 									}}
 								/>
 							</div>
+              </div>
 						);
 					}
 
@@ -444,7 +454,7 @@ return (
 						Math.abs(index - activeIndex) <= 1;
 
 					return (
-	<div style={{ width: "100%", height: "100dvh", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+	<div style={{ width: "100%", height: "100dvh", scrollSnapAlign: "start", }}>
 		<VideoCard
 			videoId={item.video.id}
 			playbackUrl={item.video.playbackUrl}
