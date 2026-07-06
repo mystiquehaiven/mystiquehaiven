@@ -38,6 +38,17 @@
 	gap: 8px;
 }
 
+.tagGrid button.active {
+	background: #c8a97e;
+	color: #080808;
+}
+
+.modalActions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+}
+
 .modalActions {
 	display: flex;
 	gap: 12px;
