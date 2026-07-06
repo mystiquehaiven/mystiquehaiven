@@ -244,6 +244,8 @@ useEffect(() => {
 		setIsAuthenticated(true);
 
 		const token = await user.getIdTokenResult();
+    console.log("admin claim:", token.claims.admin, token.claims);
+
 		setIsAdmin(token.claims.admin === true);
 
 		const userSnap = await getDoc(doc(db, "users", user.uid));
