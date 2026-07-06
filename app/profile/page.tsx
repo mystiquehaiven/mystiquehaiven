@@ -232,14 +232,6 @@ export default function ProfilePage() {
         <div className="mb-12">
           <p className="text-xs tracking-[0.3em] text-[#c8a97e]/60 uppercase mb-6">Browse</p>
           <div className="space-y-2">
-            {!hasAccess && (
-              <NavTile
-                label="Free Preview"
-                description="A rotating selection, refreshed every 24 hours"
-                onClick={() => router.push("/feed/preview")}
-                available
-              />
-            )}
             <NavTile
               label="Video Feed"
               description="The full curated library"
