@@ -422,14 +422,7 @@ return (
 
             
 {!isAdmin && (
-  <div
-    style={{
-      width: "100%",
-      height: 250,
-      overflow: "hidden",
-      contain: "layout size",
-    }}
-  >
+  <div style={{ width: "100%", height: "250px", scrollSnapAlign: "start" }}>
     <AdSlot
       adId={item.adId}
       onImpression={(adId) => {
