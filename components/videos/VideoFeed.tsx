@@ -295,22 +295,22 @@ export default function VideoFeed({
 	);
 
 	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
-const handleRangeChanged = useCallback((range: any) => {
+const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
 	evaluateAdVisibility(feedItems, range);
 
-	// clear previous timer
+	setActiveIndex(range.startIndex);
+
 	if (scrollTimeout.current) {
 		clearTimeout(scrollTimeout.current);
 	}
 
-	// detect scroll pause
 	scrollTimeout.current = setTimeout(() => {
 		virtuosoRef.current?.scrollToIndex({
-			index: activeIndex,
+			index: range.startIndex,
 			behavior: "smooth"
 		});
 	}, 120);
-}, [feedItems, activeIndex]);
+}, [feedItems]);
 
 	// ---------------- KEYBOARD NAV ----------------
 useEffect(() => {
@@ -452,20 +452,22 @@ return (
 						Math.abs(index - activeIndex) <= 1;
 
 					return (
-						<VideoCard
-							videoId={item.video.id}
-							playbackUrl={item.video.playbackUrl}
-							thumbnailUrl={item.video.thumbnailUrl}
-							tags={item.video.tags}
-							isActive={isActive}
-							isNear={index === activeIndex}
-							isMuted={isMuted}
-							onMuteToggle={() => setIsMuted((m) => !m)}
-							onOpenFilters={() => setFilterModalOpen(true)}
-							hasActiveFilters={selectedTags.length > 0}
-							isAdmin={isAdmin}
-							isAuthenticated={isAuthenticated}
-						/>
+	<div style={{ width: "100%", height: "100dvh" }}>
+		<VideoCard
+			videoId={item.video.id}
+			playbackUrl={item.video.playbackUrl}
+			thumbnailUrl={item.video.thumbnailUrl}
+			tags={item.video.tags}
+			isActive={isActive}
+			isNear={index === activeIndex}
+			isMuted={isMuted}
+			onMuteToggle={() => setIsMuted((m) => !m)}
+			onOpenFilters={() => setFilterModalOpen(true)}
+			hasActiveFilters={selectedTags.length > 0}
+			isAdmin={isAdmin}
+			isAuthenticated={isAuthenticated}
+		/>
+	</div>
 					);
 				}}
 			/>
