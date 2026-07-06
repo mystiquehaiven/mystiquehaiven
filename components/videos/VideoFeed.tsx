@@ -10,7 +10,7 @@ import {
 
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { doc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, updateDoc, deleteDoc, setDoc, serverTimestamp, arrayRemove } from "firebase/firestore";
 import AdminPanelModal from "../admin/AdminPanelModel";
 import { db, auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
@@ -248,9 +248,10 @@ useEffect(() => {
 
 		const userSnap = await getDoc(doc(db, "users", user.uid));
 		const userData = userSnap.data();
-
 		setIsSubscribed(userData?.subscription?.status === "active");
-		setFavoritedIds(userData?.favorites ?? []);
+
+		const favSnap = await getDocs(collection(db, "users", user.uid, "favorites"));
+		setFavoritedIds(favSnap.docs.map((d) => d.id));
 	});
 
 	return unsubscribe;
@@ -270,7 +271,7 @@ useEffect(() => {
 		[]
 	);
 
-  const handleFavoriteToggle = useCallback(async (videoId: string) => {
+const handleFavoriteToggle = useCallback(async (videoId: string) => {
 	const user = auth.currentUser;
 	if (!user) return;
 
@@ -279,10 +280,14 @@ useEffect(() => {
 		isFav ? prev.filter((id) => id !== videoId) : [...prev, videoId]
 	);
 
+	const favDocRef = doc(db, "users", user.uid, "favorites", videoId);
+
 	try {
-		await updateDoc(doc(db, "users", user.uid), {
-			favorites: isFav ? arrayRemove(videoId) : arrayUnion(videoId),
-		});
+		if (isFav) {
+			await deleteDoc(favDocRef);
+		} else {
+			await setDoc(favDocRef, { savedAt: serverTimestamp() });
+		}
 	} catch (err) {
 		console.error("Failed to update favorite:", err);
 		setFavoritedIds((prev) =>
