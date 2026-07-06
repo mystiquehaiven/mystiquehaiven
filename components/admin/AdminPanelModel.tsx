@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { PREDEFINED_TAGS } from "@/components/admin/UploadForm";
+import { PREDEFINED_TAGS } from "../../lib/tags";
 import styles from "../../app/styles/AdminPanelModal.module.css";
 
 
