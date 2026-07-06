@@ -46,11 +46,7 @@ export default function AdSlot({
 	return (
 		<div
 			ref={ref}
-			style={{
-				minHeight: 250,
-				width: "100%",
 
-			}}
 		/>
 	);
 }

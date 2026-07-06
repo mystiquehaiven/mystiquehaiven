@@ -404,7 +404,7 @@ return (
 		<div className="feed-viewport">
 
 			<Virtuoso
-        //overscan={{ main: 2, reverse: 2 }}
+        overscan={{ main: 2, reverse: 2 }}
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
@@ -420,31 +420,35 @@ return (
                             scrollSnapAlign: "start", 
                             contain: "layout size", }}>
 
-              <div
-				        style={{
-					        width: "100%",
-					        height: 250,
-					        overflow: "hidden",
-					        contain: "layout size",
-				        }}
-			        >
-								<AdSlot
-									adId={item.adId}
-									onImpression={(adId) => {
-										const slot = getOrCreateAdSlot(adId);
+            
+{!isAdmin && (
+  <div
+    style={{
+      width: "100%",
+      height: 250,
+      overflow: "hidden",
+      contain: "layout size",
+    }}
+  >
+    <AdSlot
+      adId={item.adId}
+      onImpression={(adId) => {
+        const slot = getOrCreateAdSlot(adId);
 
-										slot.impressions += 1;
-										slot.lastImpressionAt = Date.now();
-										slot.viewed = true;
+        slot.impressions += 1;
+        slot.lastImpressionAt = Date.now();
+        slot.viewed = true;
 
-										window.dispatchEvent(
-											new CustomEvent("ad-impression", {
-												detail: { adId }
-											})
-										);
-									}}
-								/>
-							</div>
+        window.dispatchEvent(
+          new CustomEvent("ad-impression", {
+            detail: { adId }
+          })
+        );
+      }}
+    />
+  </div>
+)}
+
               </div>
 						);
 					}
