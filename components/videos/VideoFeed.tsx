@@ -244,7 +244,6 @@ useEffect(() => {
 		setIsAuthenticated(true);
 
 		const token = await user.getIdTokenResult();
-    console.log("admin claim:", token.claims.admin, token.claims);
 
 		setIsAdmin(token.claims.admin === true);
 
@@ -551,6 +550,7 @@ return (
 			isAdmin={isAdmin}
 			isAuthenticated={isAuthenticated}
       onOpenAdmin={() => {
+      console.log("admin trigger clicked");
 	    setSelectedVideoId(item.video.id);
 	    setAdminTags(item.video.tags);
 	    setAdminModalOpen(true);
