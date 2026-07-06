@@ -15,7 +15,7 @@ export default function AdSlot({
 
 	// 1. LOAD AD ONCE PER SLOT
 	useEffect(() => {
-		loadHilltopAd(adId);
+		//loadHilltopAd(adId);
 	}, [adId]);
 
 	// 2. VIEWABILITY TRACKING

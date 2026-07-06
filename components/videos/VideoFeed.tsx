@@ -313,7 +313,7 @@ useEffect(() => {
 
 				virtuosoRef.current?.scrollToIndex({
 					index: next,
-					behavior: "smooth"
+					behavior: "auto"
 				});
 
 				return next;
@@ -328,7 +328,7 @@ useEffect(() => {
 
 				virtuosoRef.current?.scrollToIndex({
 					index: next,
-					behavior: "smooth"
+					behavior: "auto"
 				});
 
 				return next;
