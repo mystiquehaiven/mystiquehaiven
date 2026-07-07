@@ -7,7 +7,7 @@ import { loadHilltopStickyAd } from "@/lib/ads/hilltop";
 
 const EXCLUDED_PATHS = ["/videos"];
 const ZONE_ID = "bottom-sticky";
-const ZONE_SRC = "//miserly-wrap.com/b.XJVwsLdKG/lk0qYLWlcN/Bejmr9GuYZiUGlSk_PUTJcrxtOfTOcv1BMsT/MWtnN/ziEF5fNLzXU/xvN/wV";
+const ZONE_SRC = "//miserly-wrap.com/btXBVasPd.GilW0-Y/WHcJ/veWmX9_uCZ/UXlTkaP/TycZxPOSTVgvydMWDmkqtQNEzuE/5qOMDZIIxLM/wz";
 
 export default function BottomStickyAd() {
   const pathname = usePathname();

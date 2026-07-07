@@ -1,20 +1,25 @@
 const loadedZones = new Set<string>();
 
 export function loadHilltopAd(adId: string) {
-	if (loadedZones.has(adId)) return;
+  if (loadedZones.has(adId)) return;
+  loadedZones.add(adId);
 
-	loadedZones.add(adId);
+  const ZONE_SRC_MAP: Record<string, string> = {
+  "your-in-page-zone-id-1": "//miserly-wrap.com/bPXBVvs.dWGxlA0VYnW/cH/meqmp9_uRZTUKl/kcPyTqcaxtORThcX1oMATUMYtyNvz/EP5/N/z/UuxdNowC",
+  // etc
+};
 
-	const script = document.createElement("script");
+  const src = ZONE_SRC_MAP[adId];
+  if (!src) {
+    console.error(`No Hilltop zone script configured for adId: ${adId}`);
+    return;
+  }
 
-	script.async = true;
-	script.referrerPolicy = "no-referrer-when-downgrade";
-
-	// IMPORTANT: this is your zone loader URL
-	script.src =
-		"//miserly-wrap.com/b.XJVwsLdKG/lk0qYLWlcN/Bejmr9GuYZiUGlSk_PUTJcrxtOfTOcv1BMsT/MWtnN/ziEF5fNLzXU/xvN/wV";
-
-	document.body.appendChild(script);
+  const script = document.createElement("script");
+  script.async = true;
+  script.referrerPolicy = "no-referrer-when-downgrade";
+  script.src = src;
+  document.body.appendChild(script);
 }
 
 export function loadHilltopStickyAd(zoneId: string, src: string) {
