@@ -4,19 +4,21 @@ import { useEffect, useRef } from "react";
 import { loadHilltopAd } from "@/lib/ads/hilltop";
 
 export default function AdSlot({
-	adId,
+	slotId,
+	zoneId,
 	onImpression
 }: {
-	adId: string;
-	onImpression: (adId: string) => void;
+	slotId: string;
+	zoneId: string;
+	onImpression: (slotId: string) => void;
 }) {
 	const ref = useRef<HTMLDivElement | null>(null);
 	const hasCounted = useRef(false);
 
 	// 1. LOAD AD ONCE PER SLOT
 	useEffect(() => {
-		loadHilltopAd(adId);
-	}, [adId]);
+		loadHilltopAd(zoneId);
+	}, [zoneId]);
 
 	// 2. VIEWABILITY TRACKING
 	useEffect(() => {
@@ -32,7 +34,7 @@ export default function AdSlot({
 						!hasCounted.current
 					) {
 						hasCounted.current = true;
-						onImpression(adId);
+						onImpression(zoneId);
 					}
 				}
 			},
@@ -41,7 +43,7 @@ export default function AdSlot({
 
 		observer.observe(el);
 		return () => observer.disconnect();
-	}, [adId, onImpression]);
+	}, [zoneId, onImpression]);
 
 	return (
 		<div

@@ -515,9 +515,10 @@ return (
 {!isAdmin && (
   <div style={{ width: "100%", height: "250px", scrollSnapAlign: "start" }}>
     <AdSlot
-      adId={item.adId}
-      onImpression={(adId) => {
-        const slot = getOrCreateAdSlot(adId);
+      slotId={item.adId}
+      zoneId="in-page-1"
+      onImpression={(slotId) => {
+        const slot = getOrCreateAdSlot(slotId);
 
         slot.impressions += 1;
         slot.lastImpressionAt = Date.now();
@@ -525,7 +526,7 @@ return (
 
         window.dispatchEvent(
           new CustomEvent("ad-impression", {
-            detail: { adId }
+            detail: { adId: slotId }
           })
         );
       }}

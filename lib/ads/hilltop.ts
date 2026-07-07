@@ -5,7 +5,7 @@ export function loadHilltopAd(adId: string) {
   loadedZones.add(adId);
 
   const ZONE_SRC_MAP: Record<string, string> = {
-  "your-in-page-zone-id-1": "//miserly-wrap.com/b/X/Vishd.GGlS0ZYLWrcR/WeFmb9BuGZtUGlxkPP-T/cHxFO_T/co1GMKT/MetXNIzHEZ5BNLzaUPx/NSwC",
+  "in-page-1": "//miserly-wrap.com/b/X/Vishd.GGlS0ZYLWrcR/WeFmb9BuGZtUGlxkPP-T/cHxFO_T/co1GMKT/MetXNIzHEZ5BNLzaUPx/NSwC",
   // etc
 };
 
