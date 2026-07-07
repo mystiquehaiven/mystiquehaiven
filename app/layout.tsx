@@ -28,11 +28,11 @@ export const metadata: Metadata = {
 	keywords: ["AI", "Images", "Gallery", "Porn", "Adult", "Nudes", "Hentai", "Sex", "Free", "Free Porn", "Naked Woman", "Free Sex" ],
 	referrer: "no-referrer-when-downgrade",
 	  openGraph: {
-    images: ['/images/logo.jpg'], // relative to /public, or full URL
+    images: ['/images/logo.png'], // relative to /public, or full URL
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/images/logo.jpg'],
+    images: ['/images/logo.png'],
   },
 	verification: {
 		google: "SM2ugtAtEz2ecd3lFxnK4ThFnyHuhhjdTF6Es9cVy_0",

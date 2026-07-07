@@ -18,6 +18,7 @@ export default function BottomStickyAd() {
   useEffect(() => {
     if (loading || isAdmin || excluded) return;
     loadHilltopStickyAd(ZONE_ID, ZONE_SRC);
+    console.log("Zone ID: ", ZONE_SRC)
   }, [loading, isAdmin, excluded]);
 
   return null;
