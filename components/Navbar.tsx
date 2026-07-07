@@ -1,29 +1,15 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { onAuthStateChanged, User } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { useAuth } from '@/context/AuthContext' // adjust path
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { auth } from '@/lib/firebase'
 
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { user, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser)
-      if (firebaseUser) {
-        const token = await firebaseUser.getIdTokenResult()
-        setIsAdmin(!!token.claims.admin)
-      } else {
-        setIsAdmin(false)
-      }
-    })
-    return unsubscribe
-  }, [])
 
   // Close on outside click
   useEffect(() => {
@@ -72,7 +58,6 @@ export default function Navbar() {
           </Link>
         )}
 
-        {/* About — always visible */}
         <div className="mx-5 h-px bg-[#e8e0d5]/10" />
         <Link
           href="/about"
@@ -81,16 +66,15 @@ export default function Navbar() {
         >
           About
         </Link>
-        
-        <div className="mx-5 h-px bg-[#e8e0d5]/10" />
-          <Link
-            href="/store"
-            onClick={() => setOpen(false)}
-            className="py-3 px-5 text-xs tracking-[0.3em] text-[#e8e0d5]/60 uppercase hover:text-[#e8e0d5] transition-colors duration-300"
-          >
-            Store
-          </Link>
 
+        <div className="mx-5 h-px bg-[#e8e0d5]/10" />
+        <Link
+          href="/store"
+          onClick={() => setOpen(false)}
+          className="py-3 px-5 text-xs tracking-[0.3em] text-[#e8e0d5]/60 uppercase hover:text-[#e8e0d5] transition-colors duration-300"
+        >
+          Store
+        </Link>
 
         {user && isAdmin && (
           <>
@@ -120,7 +104,6 @@ export default function Navbar() {
             </button>
           </>
         )}
-
       </div>
     </div>
   )

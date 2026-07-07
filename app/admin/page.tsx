@@ -2,55 +2,48 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { useAuth } from "@/context/AuthContext"; // adjust path
 import UploadForm from "@/components/admin/UploadForm";
-import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
-
 export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
+  const [tagCountsLoading, setTagCountsLoading] = useState(true);
 
+  // ---------------- REDIRECTS ----------------
+  useEffect(() => {
+    if (authLoading) return;
 
-  
-
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (u) => {
-    if (!u) {
+    if (!user) {
       router.replace("/signin");
       return;
     }
-    const tokenResult = await u.getIdTokenResult();
-    if (!tokenResult.claims.admin) {
+
+    if (!isAdmin) {
       router.replace("/");
-      return;
     }
+  }, [authLoading, user, isAdmin, router]);
 
-    const token = await u.getIdToken();
-    const res = await fetch("/api/admin/tag-counts", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setTagCounts(data.counts);
-    }
+  // ---------------- TAG COUNTS ----------------
+  useEffect(() => {
+    if (authLoading || !user || !isAdmin) return;
 
-    setUser(u);
-    setIsAdmin(true);
-    setLoading(false);
-  });
+    (async () => {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/admin/tag-counts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTagCounts(data.counts);
+      }
+      setTagCountsLoading(false);
+    })();
+  }, [authLoading, user, isAdmin]);
 
-  return () => unsubscribe();
-}, [router]);
-
-
-
-  if (loading) {
+  if (authLoading || tagCountsLoading) {
     return (
       <div className="loading-screen">
         <span className="loading-dot" />
@@ -74,8 +67,6 @@ useEffect(() => {
             <span className="admin-badge">Admin</span>
           </div>
         </div>
-          
-
 
         <UploadForm tagCounts={tagCounts} />
       </main>
@@ -85,29 +76,6 @@ useEffect(() => {
           min-height: 100vh;
           background: #080808;
           color: #e8e8e8;
-        }
-        .nav {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-          padding: 1rem 2rem;
-          border-bottom: 1px solid #1a1a1a;
-        }
-        .nav-link {
-          font-size: 0.85rem;
-          color: #888;
-          text-decoration: none;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          transition: color 0.15s;
-        }
-        .nav-link:hover {
-          color: #e8e8e8;
-        }
-        .nav-profile {
-          margin-left: auto;
-          font-size: 0.8rem;
-          color: #555;
         }
         .main {
           max-width: 640px;
@@ -162,7 +130,6 @@ useEffect(() => {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 1; }
         }
-
       `}</style>
     </div>
   );

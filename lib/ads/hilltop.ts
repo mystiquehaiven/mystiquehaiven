@@ -16,3 +16,14 @@ export function loadHilltopAd(adId: string) {
 
 	document.body.appendChild(script);
 }
+
+export function loadHilltopStickyAd(zoneId: string, src: string) {
+  if (loadedZones.has(zoneId)) return;
+  loadedZones.add(zoneId);
+
+  const script = document.createElement("script");
+  script.async = true;
+  script.referrerPolicy = "no-referrer-when-downgrade";
+  script.src = src;
+  document.body.appendChild(script);
+}

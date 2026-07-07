@@ -15,6 +15,7 @@ import AdminPanelModal from "../admin/AdminPanelModel";
 import { db, auth } from "@/lib/firebase";
 import VideoCard from "./VideoCard";
 import TagFilterModal from "./TagFilterModel";
+import { useAuth } from "@/context/AuthContext";
 
 import { AD_CONFIG } from "@/lib/ads/adConfig";
 import AdSlot from "../AdSlot";
@@ -180,9 +181,9 @@ export default function VideoFeed({
 	const [videos, setVideos] = useState<Video[]>(initialVideos);
 	const [activeIndex, setActiveIndex] = useState(0);
 
-	const [isAdmin, setIsAdmin] = useState(false);
-	const [isSubscribed, setIsSubscribed] = useState(false);
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const { user, loading: authLoading, isAdmin } = useAuth();
+	const isAuthenticated = !!user;
+	
 
 	const [selectedTags, setSelectedTags] = useState<string[]>(() => {
 		const tagsParam = searchParams.get("tags");
@@ -206,6 +207,7 @@ export default function VideoFeed({
 
   const isNavigatingRef = useRef(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
 
 const navigateToIndex = useCallback((index: number, behavior: "auto" | "smooth" = "auto") => {
 	if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current);
@@ -233,30 +235,19 @@ useEffect(() => {
 
 	// ---------------- AUTH ----------------
 useEffect(() => {
-	const unsubscribe = auth.onAuthStateChanged(async (user) => {
-		if (!user) {
-			setIsAdmin(false);
-			setIsSubscribed(false);
-			setIsAuthenticated(false);
-			return;
-		}
+  if (!user) {
+    setFavoritedIds([]);
+    return;
+  }
 
-		setIsAuthenticated(true);
+  (async () => {
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    const userData = userSnap.data();
 
-		const token = await user.getIdTokenResult();
-
-		setIsAdmin(token.claims.admin === true);
-
-		const userSnap = await getDoc(doc(db, "users", user.uid));
-		const userData = userSnap.data();
-		setIsSubscribed(userData?.subscription?.status === "active");
-
-		const favSnap = await getDocs(collection(db, "users", user.uid, "favorites"));
-		setFavoritedIds(favSnap.docs.map((d) => d.id));
-	});
-
-	return unsubscribe;
-}, []);
+    const favSnap = await getDocs(collection(db, "users", user.uid, "favorites"));
+    setFavoritedIds(favSnap.docs.map((d) => d.id));
+  })();
+}, [user]);
 
 	// ---------------- CRUD ----------------
 	const handleDelete = useCallback((videoId: string) => {
@@ -321,7 +312,23 @@ const handleDeleteVideo = useCallback(async () => {
 	if (!selectedVideoId) return;
 	setIsDeletingVideo(true);
 	try {
-		await deleteDoc(doc(db, "videos", selectedVideoId));
+		const token = await auth.currentUser?.getIdToken();
+		if (!token) throw new Error("Not authenticated");
+
+		const res = await fetch("/api/admin/delete-video", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
+			},
+			body: JSON.stringify({ videoId: selectedVideoId }),
+		});
+
+		if (!res.ok) {
+			const { error } = await res.json().catch(() => ({}));
+			throw new Error(error || `Delete failed (${res.status})`);
+		}
+
 		handleDelete(selectedVideoId);
 		setAdminModalOpen(false);
 	} catch (err) {

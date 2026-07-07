@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
@@ -5,6 +6,10 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Script from "next/script"; 
 import { Analytics } from "@vercel/analytics/next";
+import BottomStickyAd from "@/components/ads/BottomStickyAd";
+import Popunder from "@/components/ads/PopunderAd"
+
+
 
 
 
@@ -52,9 +57,10 @@ export default function RootLayout({
 				<AuthProvider>
 					<Navbar />
 					{children}
+				<BottomStickyAd />
+				<Popunder />
 				</AuthProvider>
 				<Analytics/>
-
 			</body>
 		</html>
 	);
