@@ -467,30 +467,6 @@ export default function Home() {
         </section>
 
 
-{!isAdmin && (
-  <div style={{ width: "100%", height: "250px" }}>
-    <AdSlot
-      slotId="homepage-banner"
-      zoneId="in-page-2"
-      onImpression={(slotId) => {
-        console.log(`Ad impression: ${slotId}`);
-      }}
-    />
-  </div>
-)}
-
-{!isAdmin && (
-  <div style={{ width: "100%", height: "250px" }}>
-    <AdSlot
-      slotId="Push"
-      zoneId="in-page-push"
-      onImpression={(slotId) => {
-        console.log(`Ad impression: ${slotId}`);
-      }}
-    />
-  </div>
-)}
-
 
         {/* DIVIDER */}
         <div
@@ -629,7 +605,29 @@ export default function Home() {
 
         </footer>
         
-      
+          {!isAdmin && (
+  <div style={{ width: "100%", height: "250px" }}>
+    <AdSlot
+      slotId="homepage-banner"
+      zoneId="in-page-2"
+      onImpression={(slotId) => {
+        console.log(`Ad impression: ${slotId}`);
+      }}
+    />
+  </div>
+)}
+
+{!isAdmin && (
+  <div style={{ width: "100%", height: "250px" }}>
+    <AdSlot
+      slotId="Push"
+      zoneId="in-page-push"
+      onImpression={(slotId) => {
+        console.log(`Ad impression: ${slotId}`);
+      }}
+    />
+  </div>
+)}
 
       </div>
     </div>

@@ -6,7 +6,8 @@ export function loadHilltopAd(adId: string) {
 
   const ZONE_SRC_MAP: Record<string, string> = {
   "in-page-1": "//miserly-wrap.com/b/X/Vishd.GGlS0ZYLWrcR/WeFmb9BuGZtUGlxkPP-T/cHxFO_T/co1GMKT/MetXNIzHEZ5BNLzaUPx/NSwC",
-  "in-page-2": "//miserly-wrap.com/b/XJV.sadVGflz0uYLW/cV/jeumw9/uSZVUYlLk/P-TJcpxwOATpQywWOPDTEFtvNIzgEW5/NKDOA/4dNrQt"
+  "in-page-2": "//miserly-wrap.com/b/XJV.sadVGflz0uYLW/cV/jeumw9/uSZVUYlLk/P-TJcpxwOATpQywWOPDTEFtvNIzgEW5/NKDOA/4dNrQt",
+  "in-page-push": "//miserly-wrap.com/bWX_VFswd.G/l/0HYZW/cn/Ne/mk9iudZIUdlUkQPWT/c/xcOWTKEsyLOITkc/tdNKzPEC5aMiThMowwMAQm"
   // etc
 };
 
