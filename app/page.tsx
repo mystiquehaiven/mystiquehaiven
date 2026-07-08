@@ -479,6 +479,19 @@ export default function Home() {
   </div>
 )}
 
+{!isAdmin && (
+  <div style={{ width: "100%", height: "250px" }}>
+    <AdSlot
+      slotId="Push"
+      zoneId="in-page-push"
+      onImpression={(slotId) => {
+        console.log(`Ad impression: ${slotId}`);
+      }}
+    />
+  </div>
+)}
+
+
         {/* DIVIDER */}
         <div
           style={{
