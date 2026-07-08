@@ -7,6 +7,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import BottomStickyAd from "@/components/ads/BottomStickyAd";
 import Popunder from "@/components/ads/PopunderAd"
+import HomeButton from "@/components/HomeButton";
 
 
 
@@ -54,6 +55,7 @@ export default function RootLayout({
 		>
 			<body className="min-h-full flex flex-col">
 				<AuthProvider>
+					<HomeButton />
 					<Navbar />
 					{children}
 				<BottomStickyAd />
