@@ -7,6 +7,9 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
       },
     ],
-    sitemap: "https://mystiquehaiven.com/sitemap.xml",
+    sitemap: [
+      "https://mystiquehaiven.com/sitemap.xml",
+      "https://mystiquehaiven.com/video-sitemap.xml",
+    ],
   };
 }
