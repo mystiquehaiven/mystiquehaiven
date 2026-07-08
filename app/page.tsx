@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AdSlot from "@/components/AdSlot";
+import { useAuth } from "@/context/AuthContext";
+
 
 
 
@@ -29,6 +32,8 @@ const AGE_GATE_KEY = "mystique_age_verified";
 export default function Home() {
   const [ageVerified, setAgeVerified] = useState(false);
   const [checkedStorage, setCheckedStorage] = useState(false);
+  const { user, loading: authLoading, isAdmin } = useAuth();
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     const stored = window.localStorage.getItem(AGE_GATE_KEY);
@@ -460,6 +465,19 @@ export default function Home() {
             </span>
           </div>
         </section>
+
+
+{!isAdmin && (
+  <div style={{ width: "100%", height: "250px" }}>
+    <AdSlot
+      slotId="homepage-banner"
+      zoneId="in-page-2"
+      onImpression={(slotId) => {
+        console.log(`Ad impression: ${slotId}`);
+      }}
+    />
+  </div>
+)}
 
         {/* DIVIDER */}
         <div
