@@ -507,13 +507,16 @@ return (
 					if (item.kind === "ad") {
 						return (
 		          <div style={{ width: "100%", 
-                            height: "250px", 
-                            scrollSnapAlign: "start", 
-                            contain: "layout size", }}>
+								height: "100svh",
+								scrollSnapAlign: "start",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								contain: "layout size", }}>
 
             
 {!isAdmin && (
-  <div style={{ width: "100%", height: "250px", scrollSnapAlign: "start" }}>
+  <div style={{ width: "100%", height: "250px" }}>
     <AdSlot
       slotId={item.adId}
       zoneId="in-page-1"
