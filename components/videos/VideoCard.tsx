@@ -82,6 +82,24 @@ export default function VideoCard({
 		};
 	}, [isActive, isNear, playbackUrl]);
 
+	useEffect(() => {
+	const video = videoRef.current;
+	if (!video) return;
+
+	if (isActive) {
+		video.play().catch(() => {});
+	} else {
+		video.pause();
+		video.currentTime = 0; // optional: reset so loop doesn't resume mid-clip next time
+	}
+}, [isActive]);
+
+useEffect(() => {
+	const video = videoRef.current;
+	if (!video) return;
+	video.muted = isMuted;
+}, [isMuted]);
+
 	return (
 		<div className="video-card">
 			<video

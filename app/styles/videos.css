@@ -45,6 +45,7 @@
 
 .snap-feed > div > div {
 	scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 
