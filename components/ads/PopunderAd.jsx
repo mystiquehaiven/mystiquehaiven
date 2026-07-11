@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const MIN_ENGAGEMENT_MS = 3 * 60 * 1000; // require 3 min in-app before eligible
-const COOLDOWN_MS = 24 * 60 * 60 * 1000;  // don't refire for 24h
+const MIN_ENGAGEMENT_MS = 2 * 60 * 1000; // require 3 min in-app before eligible
+const COOLDOWN_MS = 5 * 60 * 1000;  // don't refire for 24h
 
 export default function PopunderAd() {
   const [shouldLoad, setShouldLoad] = useState(false);
