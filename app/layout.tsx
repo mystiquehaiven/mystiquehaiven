@@ -26,7 +26,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "Mystique Haiven",
 	description: "Best AI Gallery",
-	keywords: ["AI", "Images", "Gallery", "Porn", "Adult", "Nudes", "Hentai", "Sex", "Free", "Free Porn", "Naked Woman", "Free Sex" ],
+	keywords: ["Porn Reels", "Porn Scroll", "TikTok Porn", "AI", "Images", "Gallery", "Porn", "Adult", "Nudes", "Hentai", "Sex", "Free", "Free Porn", "Naked Woman", "Free Sex" ],
 	referrer: "no-referrer-when-downgrade",
 	  openGraph: {
     images: ['/images/share_img.png'], // relative to /public, or full URL
