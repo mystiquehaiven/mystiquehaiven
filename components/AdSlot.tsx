@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { loadHilltopAd } from "@/lib/ads/hilltop";
+import { loadHilltopAdInto } from "@/lib/ads/hilltop";
 
 export default function AdSlot({
 	slotId,
@@ -14,13 +14,24 @@ export default function AdSlot({
 }) {
 	const ref = useRef<HTMLDivElement | null>(null);
 	const hasCounted = useRef(false);
+	const hasLoaded = useRef(false);
 
-	// 1. LOAD AD ONCE PER SLOT
+	// LOAD AD — scoped to this instance's own container
 	useEffect(() => {
-		loadHilltopAd(zoneId);
+		const el = ref.current;
+		if (!el || hasLoaded.current) return;
+		hasLoaded.current = true;
+
+		loadHilltopAdInto(el, zoneId);
+
+		return () => {
+			// clean the container on unmount so a recycled Virtuoso
+			// node doesn't inherit stale ad markup from a prior instance
+			el.innerHTML = "";
+		};
 	}, [zoneId]);
 
-	// 2. VIEWABILITY TRACKING
+	// VIEWABILITY TRACKING (unchanged)
 	useEffect(() => {
 		const el = ref.current;
 		if (!el) return;
@@ -34,7 +45,7 @@ export default function AdSlot({
 						!hasCounted.current
 					) {
 						hasCounted.current = true;
-						onImpression(zoneId);
+						onImpression(slotId);
 					}
 				}
 			},
@@ -43,12 +54,7 @@ export default function AdSlot({
 
 		observer.observe(el);
 		return () => observer.disconnect();
-	}, [zoneId, onImpression]);
+	}, [slotId, onImpression]);
 
-	return (
-		<div
-			ref={ref}
-
-		/>
-	);
+	return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
 }
