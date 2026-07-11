@@ -43,7 +43,7 @@ const AD_INTERVAL = 6;
 
 type FeedItem =
 	| { kind: "video"; video: Video }
-	| { kind: "ad"; adId: string };
+	| { kind: "ad"; adId: string; zoneId: string };
 
 function shuffleVideos<T>(arr: T[]): T[] {
 	const out = [...arr];
@@ -54,8 +54,11 @@ function shuffleVideos<T>(arr: T[]): T[] {
 	return out;
 }
 
+const AD_ZONES = ["in-page-1", "in-page-2", "in-page-3", "in-page-4", "in-page-5", "in-page-6", "in-page-7", "in-page-8", "in-page-9", "in-page-10"];
+
 function buildFeedItems(videos: Video[]): FeedItem[] {
 	const items: FeedItem[] = [];
+	let adCount = 0;
 
 	videos.forEach((video, i) => {
 		items.push({ kind: "video", video });
@@ -64,8 +67,10 @@ function buildFeedItems(videos: Video[]): FeedItem[] {
 		if (!isLast && (i + 1) % AD_INTERVAL === 0) {
 			items.push({
 				kind: "ad",
-				adId: `ad-after-${video.id}`
+				adId: `ad-after-${video.id}`,
+				zoneId: AD_ZONES[adCount % AD_ZONES.length],
 			});
+			adCount++;
 		}
 	});
 
@@ -519,7 +524,7 @@ return (
   <div style={{ width: "100%", height: "250px" }}>
     <AdSlot
       slotId={item.adId}
-      zoneId="in-page-1"
+      zoneId={item.zoneId}
       onImpression={(slotId) => {
         const slot = getOrCreateAdSlot(slotId);
 
