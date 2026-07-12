@@ -204,7 +204,8 @@ export default function VideoFeed({
   const [adminTags, setAdminTags] = useState<string[]>([]);
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const pendingIndexRef = useRef<number | null>(null);
 
 	const shuffleOrderRef = useRef<{
@@ -401,23 +402,25 @@ const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: n
 	evaluateAdVisibility(feedItems, range);
 	if (isNavigatingRef.current) return;
 
-	// Always track the latest range, but don't commit it as active
-	// while the user is still scrolling — that's what causes multiple
-	// cards to briefly become "active" and all call play() in quick succession.
-	pendingIndexRef.current = range.startIndex;
+	if (settleTimerRef.current) {
+		clearTimeout(settleTimerRef.current);
+	}
 
-	if (!isScrolling) {
+	// Commit activeIndex only after scroll position has been stable
+	// for 150ms — avoids acting on intermediate positions mid-gesture
+	// and avoids relying on isScrolling's event ordering.
+	settleTimerRef.current = setTimeout(() => {
 		setActiveIndex(range.startIndex);
-	}
-}, [feedItems, isScrolling]);
+	}, 150);
+}, [feedItems]);
 
-const handleIsScrollingChange = useCallback((scrolling: boolean) => {
-	setIsScrolling(scrolling);
-	if (!scrolling && pendingIndexRef.current !== null) {
-		// scroll just settled — commit whatever the final range was
-		setActiveIndex(pendingIndexRef.current);
-	}
+useEffect(() => {
+	return () => {
+		if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+	};
 }, []);
+
+
 
 	// ---------------- KEYBOARD NAV ----------------
 useEffect(() => {
@@ -522,7 +525,6 @@ return (
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
-				isScrolling={handleIsScrollingChange}
 				style={{ height: "100%", width: "100%" }}
         className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
