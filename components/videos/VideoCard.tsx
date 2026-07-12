@@ -116,8 +116,22 @@ useEffect(() => {
 useEffect(() => {
 	const video = videoRef.current;
 	if (!video) return;
-	video.muted = isMuted || !isActive
-}, [isMuted]);
+	// Runs on mount (picks up current global mute state) and whenever
+	// isMuted or isActive changes — keeps every card's audio in sync
+	// with the global toggle without needing a manual tap per video.
+	video.muted = isMuted || !isActive;
+}, [isMuted, isActive]);
+
+const handleMuteClick = () => {
+	const video = videoRef.current;
+	if (video) {
+		// Synchronous, gesture-linked mutation — do this first,
+		// before any React state update, so the browser treats
+		// the unmute as a direct result of the tap.
+		video.muted = !video.muted;
+	}
+	onMuteToggle(); // updates parent state for the icon / other cards
+};
 
 useEffect(() => {
 	if (isActive) console.log(`[${videoId}] became active`);
@@ -126,19 +140,18 @@ useEffect(() => {
 	return (
 		<div className="video-card">
 			<video
-				ref={videoRef}
-				className="video"
-				poster={thumbnailUrl}
-				muted={isMuted}
-				loop
-				playsInline
+	ref={videoRef}
+	className="video"
+	poster={thumbnailUrl}
+	loop
+	playsInline
 			/>
 
 {isNear && (
 	<div className={`overlay ${isNear ? "visible" : ""}`}>
-		<button className="control-btn" onClick={onMuteToggle} aria-label={isMuted ? "Unmute" : "Mute"}>
-			{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-		</button>
+<button className="control-btn" onClick={handleMuteClick} aria-label={isMuted ? "Unmute" : "Mute"}>
+	{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+</button>
 
 		<button className="control-btn" onClick={onShare} aria-label="Share">
 			<Share2 size={20} />
