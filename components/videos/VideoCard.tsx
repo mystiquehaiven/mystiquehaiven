@@ -45,6 +45,8 @@ export default function VideoCard({
 }: Props) {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const hlsRef = useRef<Hls | null>(null);
+	const playPromiseRef = useRef<Promise<void> | null>(null);
+
 
 	useEffect(() => {
 		const video = videoRef.current;
@@ -81,17 +83,44 @@ export default function VideoCard({
 			}
 		};
 	}, [isActive, isNear, playbackUrl]);
+	
 
-	useEffect(() => {
+useEffect(() => {
 	const video = videoRef.current;
 	if (!video) return;
 
+	let cancelled = false;
+
 	if (isActive) {
-		video.play().catch(() => {});
+		// play() returns a promise (or undefined in old Safari) — capture it
+		const p = video.play();
+		playPromiseRef.current = p ?? null;
+
+		if (p) {
+			p.catch(() => {
+				// autoplay blocked, or aborted because pause() was called
+				// on this same element before play() resolved — ignore
+			});
+		}
 	} else {
-		video.pause();
-		video.currentTime = 0; // optional: reset so loop doesn't resume mid-clip next time
+		// Wait for any in-flight play() to settle before pausing.
+		// Calling pause() while play() is still pending is what throws
+		// the AbortError / causes playback to "stick" in some browsers.
+		Promise.resolve(playPromiseRef.current)
+			.catch(() => {}) // don't let a rejected play() promise skip the pause
+			.then(() => {
+				if (cancelled) return; // effect cleaned up / isActive changed again
+				const v = videoRef.current;
+				if (v) {
+					v.pause();
+					v.currentTime = 0;
+				}
+			});
 	}
+
+	return () => {
+		cancelled = true;
+	};
 }, [isActive]);
 
 useEffect(() => {
