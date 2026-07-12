@@ -46,82 +46,71 @@ export default function VideoCard({
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const hlsRef = useRef<Hls | null>(null);
 	const playPromiseRef = useRef<Promise<void> | null>(null);
+	const isActiveRef = useRef(isActive);
 
 
-	useEffect(() => {
-		const video = videoRef.current;
-		if (!video) return;
 
-if (!isNear && !isActive) {
-	video.pause();
-	if (hlsRef.current) {
-		hlsRef.current.destroy();
-		hlsRef.current = null;
-	}
-	video.removeAttribute("src");
-	video.load();
-	return;
-}
+useEffect(() => {
+	isActiveRef.current = isActive;
+}, [isActive]);
 
-		if (hlsRef.current) return;
+useEffect(() => {
+	const video = videoRef.current;
+	if (!video) return;
 
-		if (Hls.isSupported()) {
-			const hls = new Hls();
-			hlsRef.current = hls;
-
-			hls.loadSource(playbackUrl);
-			hls.attachMedia(video);
-
-			hls.on(Hls.Events.MANIFEST_PARSED, () => {
-				if (isActive) video.play().catch(() => {});
-			});
+	if (!isNear && !isActive) {
+		if (hlsRef.current) {
+			hlsRef.current.destroy();
+			hlsRef.current = null;
 		}
+		video.removeAttribute("src");
+		video.load();
+		return;
+	}
 
-		return () => {
-			if (hlsRef.current) {
-				hlsRef.current.destroy();
-				hlsRef.current = null;
+	if (hlsRef.current) return;
+
+	if (Hls.isSupported()) {
+		const hls = new Hls();
+		hlsRef.current = hls;
+
+		hls.loadSource(playbackUrl);
+		hls.attachMedia(video);
+
+		hls.on(Hls.Events.MANIFEST_PARSED, () => {
+			// Use the ref, not the closed-over `isActive` — by the time
+			// this fires (especially on slower mobile connections),
+			// isActive may have changed since the effect was created.
+			if (isActiveRef.current) {
+				video.play().catch(() => {});
 			}
-		};
-	}, [isActive, isNear, playbackUrl]);
+		});
+	}
+
+	return () => {
+		if (hlsRef.current) {
+			hlsRef.current.destroy();
+			hlsRef.current = null;
+		}
+	};
+}, [isActive, isNear, playbackUrl]);
 
 
 useEffect(() => {
 	const video = videoRef.current;
 	if (!video) return;
 
-	let cancelled = false;
-
 	if (isActive) {
-		// play() returns a promise (or undefined in old Safari) — capture it
-		const p = video.play();
-		playPromiseRef.current = p ?? null;
-
-		if (p) {
-			p.catch(() => {
-				// autoplay blocked, or aborted because pause() was called
-				// on this same element before play() resolved — ignore
-			});
+		if (video.readyState >= 3) {
+			// HAVE_FUTURE_DATA or better — safe to play now
+			video.play().catch(() => {});
 		}
+		// If not ready, the MANIFEST_PARSED handler above (via isActiveRef)
+		// will catch it once the source finishes loading.
 	} else {
-		// Wait for any in-flight play() to settle before pausing.
-		// Calling pause() while play() is still pending is what throws
-		// the AbortError / causes playback to "stick" in some browsers.
-		Promise.resolve(playPromiseRef.current)
-			.catch(() => {}) // don't let a rejected play() promise skip the pause
-			.then(() => {
-				if (cancelled) return; // effect cleaned up / isActive changed again
-				const v = videoRef.current;
-				if (v) {
-					v.pause();
-					v.currentTime = 0;
-				}
-			});
+		video.pause();
+		video.currentTime = 0;
 	}
-
-	return () => {
-		cancelled = true;
-	};
 }, [isActive]);
 
 useEffect(() => {
