@@ -547,8 +547,11 @@ return (
 					}
 
 					/* ---------------- VIDEO ---------------- */
-					const isActive =
-						Math.abs(index - activeIndex) <= 1;
+					const isActive = Math.abs(index - activeIndex) <= 1;
+					const isNear = Math.abs(index - activeIndex) <= 1; // for HLS mount/preload range
+					const isVideoActive = index === activeIndex;         // for playback — single card only
+					const isMounted = Math.abs(index - activeIndex) <= 1; // wide — for isNear
+					const isPlaying = index === activeIndex; 
 
 					return (
 	<div style={{ width: "100%", height: "100svh", scrollSnapAlign: "start", }}>
@@ -557,8 +560,8 @@ return (
 			playbackUrl={item.video.playbackUrl}
 			thumbnailUrl={item.video.thumbnailUrl}
 			tags={item.video.tags}
-			isActive={isActive}
-			isNear={index === activeIndex}
+			isActive={isPlaying}
+			isNear={isMounted}
 			isMuted={isMuted}
 			onMuteToggle={() => setIsMuted((m) => !m)}
 			onOpenFilters={() => setFilterModalOpen(true)}
