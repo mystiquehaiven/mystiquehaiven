@@ -84,7 +84,7 @@ useEffect(() => {
 	const video = videoRef.current;
 	if (!video) return;
 
-	if (!isNear && !isActive) {
+	if (!isNear) {
 		if (hlsRef.current) {
 			hlsRef.current.destroy();
 			hlsRef.current = null;
@@ -117,7 +117,7 @@ hls.on(Hls.Events.MANIFEST_PARSED, () => {
 			hlsRef.current = null;
 		}
 	};
-}, [isActive, isNear, playbackUrl]);
+}, [isNear, playbackUrl]);
 
 
 useEffect(() => {
