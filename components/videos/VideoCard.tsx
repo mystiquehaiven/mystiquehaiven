@@ -52,15 +52,16 @@ export default function VideoCard({
 		const video = videoRef.current;
 		if (!video) return;
 
-		if (!isNear && !isActive) {
-			if (hlsRef.current) {
-				hlsRef.current.destroy();
-				hlsRef.current = null;
-			}
-			video.removeAttribute("src");
-			video.load();
-			return;
-		}
+if (!isNear && !isActive) {
+	video.pause();
+	if (hlsRef.current) {
+		hlsRef.current.destroy();
+		hlsRef.current = null;
+	}
+	video.removeAttribute("src");
+	video.load();
+	return;
+}
 
 		if (hlsRef.current) return;
 
@@ -128,6 +129,10 @@ useEffect(() => {
 	if (!video) return;
 	video.muted = isMuted || !isActive
 }, [isMuted]);
+
+useEffect(() => {
+	if (isActive) console.log(`[${videoId}] became active`);
+}, [isActive, videoId]);
 
 	return (
 		<div className="video-card">
