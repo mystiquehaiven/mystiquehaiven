@@ -204,6 +204,8 @@ export default function VideoFeed({
   const [adminTags, setAdminTags] = useState<string[]>([]);
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const pendingIndexRef = useRef<number | null>(null);
 
 	const shuffleOrderRef = useRef<{
 		key: string;
@@ -397,9 +399,25 @@ const handleDeleteVideo = useCallback(async () => {
 	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
 const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
 	evaluateAdVisibility(feedItems, range);
-	if (isNavigatingRef.current) return; // don't let scroll-driven sync fight a programmatic nav
-	setActiveIndex(range.startIndex);
-}, [feedItems]);
+	if (isNavigatingRef.current) return;
+
+	// Always track the latest range, but don't commit it as active
+	// while the user is still scrolling — that's what causes multiple
+	// cards to briefly become "active" and all call play() in quick succession.
+	pendingIndexRef.current = range.startIndex;
+
+	if (!isScrolling) {
+		setActiveIndex(range.startIndex);
+	}
+}, [feedItems, isScrolling]);
+
+const handleIsScrollingChange = useCallback((scrolling: boolean) => {
+	setIsScrolling(scrolling);
+	if (!scrolling && pendingIndexRef.current !== null) {
+		// scroll just settled — commit whatever the final range was
+		setActiveIndex(pendingIndexRef.current);
+	}
+}, []);
 
 	// ---------------- KEYBOARD NAV ----------------
 useEffect(() => {
@@ -504,6 +522,7 @@ return (
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
+				isScrolling={handleIsScrollingChange}
 				style={{ height: "100%", width: "100%" }}
         className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
