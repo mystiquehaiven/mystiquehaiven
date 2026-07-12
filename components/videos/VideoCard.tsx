@@ -47,12 +47,38 @@ export default function VideoCard({
 	const hlsRef = useRef<Hls | null>(null);
 	const playPromiseRef = useRef<Promise<void> | null>(null);
 	const isActiveRef = useRef(isActive);
+	const isMutedRef = useRef(isMuted);
 
+
+useEffect(() => {
+	const video = videoRef.current;
+	if (!video) return;
+
+	const attemptPlay = () => {
+		if (isActiveRef.current) {
+			video.muted = isMutedRef.current;
+			video.play().catch(() => {});
+		}
+	};
+
+	// Retry whenever the element crosses into a playable state —
+	// covers the case where isActive became true before the video
+	// had buffered enough data for play() to succeed.
+	video.addEventListener("canplay", attemptPlay);
+
+	return () => {
+		video.removeEventListener("canplay", attemptPlay);
+	};
+}, []); // stable listener for the life of the component
 
 
 useEffect(() => {
 	isActiveRef.current = isActive;
 }, [isActive]);
+
+useEffect(() => {
+	isMutedRef.current = isMuted;
+}, [isMuted]);
 
 useEffect(() => {
 	const video = videoRef.current;
@@ -77,14 +103,12 @@ useEffect(() => {
 		hls.loadSource(playbackUrl);
 		hls.attachMedia(video);
 
-		hls.on(Hls.Events.MANIFEST_PARSED, () => {
-			// Use the ref, not the closed-over `isActive` — by the time
-			// this fires (especially on slower mobile connections),
-			// isActive may have changed since the effect was created.
-			if (isActiveRef.current) {
-				video.play().catch(() => {});
-			}
-		});
+hls.on(Hls.Events.MANIFEST_PARSED, () => {
+	if (isActiveRef.current) {
+		video.muted = isMutedRef.current;
+		video.play().catch(() => {});
+	}
+});
 	}
 
 	return () => {
@@ -101,26 +125,21 @@ useEffect(() => {
 	if (!video) return;
 
 	if (isActive) {
+		// Set muted state BEFORE calling play — don't rely on the
+		// separate mute-sync effect having already run this commit.
+		// Unmuted autoplay without this ordering gets silently
+		// blocked by mobile browsers' autoplay policy.
+		video.muted = isMuted;
 		if (video.readyState >= 3) {
-			// HAVE_FUTURE_DATA or better — safe to play now
 			video.play().catch(() => {});
 		}
-		// If not ready, the MANIFEST_PARSED handler above (via isActiveRef)
-		// will catch it once the source finishes loading.
 	} else {
 		video.pause();
 		video.currentTime = 0;
 	}
-}, [isActive]);
+}, [isActive, isMuted]);
 
-useEffect(() => {
-	const video = videoRef.current;
-	if (!video) return;
-	// Runs on mount (picks up current global mute state) and whenever
-	// isMuted or isActive changes — keeps every card's audio in sync
-	// with the global toggle without needing a manual tap per video.
-	video.muted = isMuted || !isActive;
-}, [isMuted, isActive]);
+
 
 const handleMuteClick = () => {
 	const video = videoRef.current;
