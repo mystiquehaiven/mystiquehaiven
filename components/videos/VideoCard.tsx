@@ -83,7 +83,7 @@ export default function VideoCard({
 			}
 		};
 	}, [isActive, isNear, playbackUrl]);
-	
+
 
 useEffect(() => {
 	const video = videoRef.current;
@@ -126,7 +126,7 @@ useEffect(() => {
 useEffect(() => {
 	const video = videoRef.current;
 	if (!video) return;
-	video.muted = isMuted;
+	video.muted = isMuted || !isActive
 }, [isMuted]);
 
 	return (
