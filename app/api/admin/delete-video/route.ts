@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
 	const bunnyVideoId = snap.data()?.bunnyVideoId;
 	const libraryId = process.env.BUNNY_LIBRARY_ID;
-	const apiKey = process.env.BUNNY_STREAM_API_KEY;
+	const apiKey = process.env.BUNNY_API_KEY;
 
 	if (bunnyVideoId) {
 		const bunnyRes = await fetch(
