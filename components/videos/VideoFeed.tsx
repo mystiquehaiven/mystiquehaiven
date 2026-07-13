@@ -205,13 +205,16 @@ export default function VideoFeed({
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
 
-  // Latest range reported by Virtuoso, and whether it's currently mid-scroll.
-  // activeIndex is committed either immediately (discrete, non-scrolling
-  // range change) or the moment isScrolling reports false (real scroll-end) -
-  // never on a guessed timeout, which lingering momentum scroll can reset
-  // indefinitely.
-  const pendingIndexRef = useRef<number | null>(null);
-  const isScrollingRef = useRef(false);
+  // IntersectionObserver-based active-index detection. This watches actual
+  // confirmed DOM visibility of each item against the real scroll container,
+  // instead of relying on Virtuoso's rangeChanged (which reports the
+  // virtualization window, not visibility, and doesn't reliably settle
+  // during scroll-snap momentum).
+  const scrollerElRef = useRef<HTMLElement | Window | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const itemElsRef = useRef<Map<number, HTMLElement>>(new Map());
+  const intersectionRatios = useRef<Map<number, number>>(new Map());
+  const itemRefCallbacks = useRef<Map<number, (node: HTMLDivElement | null) => void>>(new Map());
 
 	const shuffleOrderRef = useRef<{
 		key: string;
@@ -402,30 +405,94 @@ const handleDeleteVideo = useCallback(async () => {
 		[displayVideos]
 	);
 
-	// ---------------- AD VISIBILITY + ACTIVE INDEX (Virtuoso-native) ----------------
-	// Virtuoso can fire rangeChanged repeatedly during a single momentum/snap
-	// scroll, each call superseding the last. A fixed debounce window can get
-	// reset indefinitely by trailing scroll events, so instead: always record
-	// the latest range, and only commit activeIndex once Virtuoso itself
-	// confirms scrolling has stopped (or immediately, if nothing is scrolling
-	// at all - e.g. a single discrete snap that never triggers isScrolling).
+	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
+	// rangeChanged is still the right signal for ad fill/dedupe - it just
+	// isn't a reliable signal for "which video is active" (see below).
 	const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
 		evaluateAdVisibility(feedItems, range);
-		pendingIndexRef.current = range.startIndex;
-
-		if (isNavigatingRef.current) return;
-
-		if (!isScrollingRef.current) {
-			setActiveIndex(range.startIndex);
-		}
 	}, [feedItems]);
 
-	const handleIsScrolling = useCallback((scrolling: boolean) => {
-		isScrollingRef.current = scrolling;
+	// ---------------- ACTIVE INDEX (IntersectionObserver) ----------------
+	const computeActiveFromRatios = useCallback(() => {
+		if (isNavigatingRef.current) return;
 
-		if (!scrolling && !isNavigatingRef.current && pendingIndexRef.current !== null) {
-			setActiveIndex(pendingIndexRef.current);
+		let bestIndex: number | null = null;
+		let bestRatio = 0;
+
+		intersectionRatios.current.forEach((ratio, index) => {
+			if (ratio > bestRatio) {
+				bestRatio = ratio;
+				bestIndex = index;
+			}
+		});
+
+		if (bestIndex !== null && bestRatio > 0.5) {
+			const nextIndex = bestIndex;
+			setActiveIndex((prev) => (prev === nextIndex ? prev : nextIndex));
 		}
+	}, []);
+
+	const handleObserverEntries = useCallback((entries: IntersectionObserverEntry[]) => {
+		for (const entry of entries) {
+			const index = Number((entry.target as HTMLElement).dataset.index);
+			if (Number.isNaN(index)) continue;
+			intersectionRatios.current.set(index, entry.isIntersecting ? entry.intersectionRatio : 0);
+		}
+		computeActiveFromRatios();
+	}, [computeActiveFromRatios]);
+
+	// Virtuoso's scrollerRef hands us the actual scrollable element (or
+	// window) - use it as the observer root so ratios are computed against
+	// real scroll-snap viewport visibility rather than the document root.
+	const handleScrollerRef = useCallback((el: HTMLElement | Window | null) => {
+		scrollerElRef.current = el;
+
+		if (observerRef.current) {
+			observerRef.current.disconnect();
+			observerRef.current = null;
+		}
+		if (!el) return;
+
+		observerRef.current = new IntersectionObserver(handleObserverEntries, {
+			root: el instanceof Window ? null : el,
+			threshold: [0, 0.25, 0.5, 0.6, 0.75, 1],
+		});
+
+		// Re-observe anything that mounted before the observer existed.
+		itemElsRef.current.forEach((node) => observerRef.current?.observe(node));
+	}, [handleObserverEntries]);
+
+	useEffect(() => {
+		return () => {
+			observerRef.current?.disconnect();
+			observerRef.current = null;
+		};
+	}, []);
+
+	// Stable per-index ref callback so Virtuoso mounting/unmounting an item
+	// (windowing) attaches/detaches from the same observer cleanly, and
+	// re-renders don't cause unnecessary unobserve/observe churn.
+	const getItemRefCallback = useCallback((index: number) => {
+		let cb = itemRefCallbacks.current.get(index);
+		if (!cb) {
+			cb = (node: HTMLDivElement | null) => {
+				const prevNode = itemElsRef.current.get(index);
+				if (prevNode && prevNode !== node) {
+					observerRef.current?.unobserve(prevNode);
+				}
+
+				if (node) {
+					itemElsRef.current.set(index, node);
+					node.dataset.index = String(index);
+					observerRef.current?.observe(node);
+				} else {
+					itemElsRef.current.delete(index);
+					intersectionRatios.current.delete(index);
+				}
+			};
+			itemRefCallbacks.current.set(index, cb);
+		}
+		return cb;
 	}, []);
 
 
@@ -533,7 +600,7 @@ return (
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
-				isScrolling={handleIsScrolling}
+				scrollerRef={handleScrollerRef}
 				style={{ height: "100%", width: "100%" }}
         className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
@@ -581,7 +648,7 @@ return (
 					const isPlaying = index === activeIndex;
 
 					return (
-	<div style={{ width: "100%", height: "100svh", scrollSnapAlign: "start", }}>
+	<div ref={getItemRefCallback(index)} style={{ width: "100%", height: "100svh", scrollSnapAlign: "start", }}>
 		<VideoCard
 			videoId={item.video.id}
 			playbackUrl={item.video.playbackUrl}
