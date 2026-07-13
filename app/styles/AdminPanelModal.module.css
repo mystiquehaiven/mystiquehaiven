@@ -1,70 +1,122 @@
 .overlay {
-	position: fixed;
-	inset: 0;
-	z-index: 10000;
-	background: rgba(0, 0, 0, 0.6);
-	display: flex;
-	align-items: center;
-	justify-content: center;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal {
-	background: #080808;
-	border: 1px solid #c8a97e;
-	border-radius: 8px;
-	padding: 24px;
-	max-width: 480px;
-	width: 90%;
-	max-height: 80vh;
-	overflow-y: auto;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  max-height: 60vh;
+  background: #111;
+  border-top: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 16px 16px 0 0;
+  padding: 20px 20px 32px;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .modalHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 16px;
-	color: #c8a97e;
-	font-family: "Cormorant Garamond", serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.modalTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.85);
 }
 
 .modalBody {
-	margin-bottom: 16px;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
 }
 
 .tagGrid {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.tagGrid button {
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.tagGrid button:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .tagGrid button.active {
-	background: #c8a97e;
-	color: #080808;
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.5);
+  color: rgba(212, 175, 55, 0.9);
 }
 
 .modalActions {
-	display: flex;
-	gap: 12px;
-	justify-content: flex-end;
-}
-
-.modalActions {
-	display: flex;
-	gap: 12px;
-	justify-content: flex-end;
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .deleteButton {
-    border: 1px solid #f61717;
-    border-radius: 8px;
-    padding: 24px;
-    background: #f35757;
+  padding: 10px 20px;
+  background: rgba(220, 60, 60, 0.12);
+  border: 1px solid rgba(220, 60, 60, 0.4);
+  border-radius: 8px;
+  color: rgba(240, 120, 120, 0.9);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.deleteButton:hover {
+  background: rgba(220, 60, 60, 0.2);
+  border-color: rgba(220, 60, 60, 0.6);
 }
 
 .saveButton {
-    border: 1px solid #abb990;
-    border-radius: 8px;
-    padding: 24px;
-    background: #6ba965;
+  flex: 1;
+  padding: 10px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  color: rgba(212, 175, 55, 0.9);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.saveButton:hover {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: rgba(212, 175, 55, 0.65);
 }
