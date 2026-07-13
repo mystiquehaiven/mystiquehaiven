@@ -204,9 +204,14 @@ export default function VideoFeed({
   const [adminTags, setAdminTags] = useState<string[]>([]);
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Latest range reported by Virtuoso, and whether it's currently mid-scroll.
+  // activeIndex is committed either immediately (discrete, non-scrolling
+  // range change) or the moment isScrolling reports false (real scroll-end) -
+  // never on a guessed timeout, which lingering momentum scroll can reset
+  // indefinitely.
   const pendingIndexRef = useRef<number | null>(null);
+  const isScrollingRef = useRef(false);
 
 	const shuffleOrderRef = useRef<{
 		key: string;
@@ -397,28 +402,31 @@ const handleDeleteVideo = useCallback(async () => {
 		[displayVideos]
 	);
 
-	// ---------------- AD VISIBILITY (Virtuoso-native) ----------------
-const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
-	evaluateAdVisibility(feedItems, range);
-	if (isNavigatingRef.current) return;
+	// ---------------- AD VISIBILITY + ACTIVE INDEX (Virtuoso-native) ----------------
+	// Virtuoso can fire rangeChanged repeatedly during a single momentum/snap
+	// scroll, each call superseding the last. A fixed debounce window can get
+	// reset indefinitely by trailing scroll events, so instead: always record
+	// the latest range, and only commit activeIndex once Virtuoso itself
+	// confirms scrolling has stopped (or immediately, if nothing is scrolling
+	// at all - e.g. a single discrete snap that never triggers isScrolling).
+	const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
+		evaluateAdVisibility(feedItems, range);
+		pendingIndexRef.current = range.startIndex;
 
-	if (settleTimerRef.current) {
-		clearTimeout(settleTimerRef.current);
-	}
+		if (isNavigatingRef.current) return;
 
-	// Commit activeIndex only after scroll position has been stable
-	// for 150ms — avoids acting on intermediate positions mid-gesture
-	// and avoids relying on isScrolling's event ordering.
-	settleTimerRef.current = setTimeout(() => {
-		setActiveIndex(range.startIndex);
-	}, 150);
-}, [feedItems]);
+		if (!isScrollingRef.current) {
+			setActiveIndex(range.startIndex);
+		}
+	}, [feedItems]);
 
-useEffect(() => {
-	return () => {
-		if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-	};
-}, []);
+	const handleIsScrolling = useCallback((scrolling: boolean) => {
+		isScrollingRef.current = scrolling;
+
+		if (!scrolling && !isNavigatingRef.current && pendingIndexRef.current !== null) {
+			setActiveIndex(pendingIndexRef.current);
+		}
+	}, []);
 
 
 
@@ -525,6 +533,7 @@ return (
 				ref={virtuosoRef}
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
+				isScrolling={handleIsScrolling}
 				style={{ height: "100%", width: "100%" }}
         className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
@@ -568,11 +577,8 @@ return (
 					}
 
 					/* ---------------- VIDEO ---------------- */
-					const isActive = Math.abs(index - activeIndex) <= 1;
-					const isNear = Math.abs(index - activeIndex) <= 1; // for HLS mount/preload range
-					const isVideoActive = index === activeIndex;         // for playback — single card only
 					const isMounted = Math.abs(index - activeIndex) <= 1; // wide — for isNear
-					const isPlaying = index === activeIndex; 
+					const isPlaying = index === activeIndex;
 
 					return (
 	<div style={{ width: "100%", height: "100svh", scrollSnapAlign: "start", }}>
