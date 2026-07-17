@@ -19,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 
 import { AD_CONFIG } from "@/lib/ads/adConfig";
 import AdSlot from "../AdSlot";
+import "../videos/ShareCopyMessage.css"
 
 interface Video {
 	id: string;
@@ -223,6 +224,7 @@ export default function VideoFeed({
 
   const isNavigatingRef = useRef(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [shareToast, setShareToast] = useState(false);
   
 
 const navigateToIndex = useCallback((index: number, behavior: "auto" | "smooth" = "auto") => {
@@ -278,6 +280,29 @@ useEffect(() => {
 		},
 		[]
 	);
+
+const handleShare = useCallback(async (video: Video) => {
+	const url = `${window.location.origin}${pathname}?v=${video.id}`;
+
+	if (navigator.share) {
+		try {
+			await navigator.share({ url });
+		} catch (err) {
+			if ((err as Error).name !== "AbortError") {
+				console.error("Share failed:", err);
+			}
+		}
+		return;
+	}
+
+	try {
+		await navigator.clipboard.writeText(url);
+		setShareToast(true);
+		setTimeout(() => setShareToast(false), 2000);
+	} catch (err) {
+		console.error("Clipboard write failed:", err);
+	}
+}, [pathname]);
 
 const handleFavoriteToggle = useCallback(async (videoId: string) => {
 	const user = auth.currentUser;
@@ -591,6 +616,10 @@ return (
 	    isAdmin={isAdmin}
     />
 
+	{shareToast && (
+	<div className="share-toast">Link copied</div>
+)}
+
 
 		{/* VIEWPORT WRAPPER */}
 		<div className="feed-viewport">
@@ -601,6 +630,7 @@ return (
 				data={feedItems}
 				rangeChanged={handleRangeChanged}
 				scrollerRef={handleScrollerRef}
+				
 				style={{ height: "100%", width: "100%" }}
         className="snap-feed"
 				itemContent={(index, item: FeedItem) => {
@@ -670,6 +700,7 @@ return (
         }}
       onFavorite={() => handleFavoriteToggle(item.video.id)}
       isFavorited={favoritedIds.includes(item.video.id)}
+	  onShare={() => handleShare(item.video)}
 		/>
 	</div>
 					);
